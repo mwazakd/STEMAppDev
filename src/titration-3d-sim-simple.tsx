@@ -142,7 +142,7 @@ export default function TitrationSimulator3D() {
     
     const beakerGroup = new THREE.Group();
     beakerGroup.position.set(0, 0, 0);
-    beakerGroupRef.current = beakerGroup;
+    (beakerGroupRef as React.MutableRefObject<THREE.Group>).current = beakerGroup;
     
     const beakerWallGeometry = new THREE.CylinderGeometry(1.2, 1.3, 3.5, 32, 1, true);
     const beakerMaterial = new THREE.MeshPhysicalMaterial({
@@ -209,7 +209,7 @@ export default function TitrationSimulator3D() {
     
     const buretteGroup = new THREE.Group();
     buretteGroup.position.set(0, 6.5, 0);
-    buretteGroupRef.current = buretteGroup;
+    (buretteGroupRef as React.MutableRefObject<THREE.Group>).current = buretteGroup;
     
     const buretteTubeGeometry = new THREE.CylinderGeometry(0.18, 0.18, 5, 32, 1, true);
     const glassMaterial = new THREE.MeshPhysicalMaterial({
@@ -249,7 +249,7 @@ export default function TitrationSimulator3D() {
     });
     const stopcock = new THREE.Mesh(stopcockGeometry, stopcockMaterial);
     stopcock.position.y = -2.4;
-    stopcockRef.current = stopcock;
+    (stopcockRef as React.MutableRefObject<THREE.Mesh>).current = stopcock;
     buretteGroup.add(stopcock);
     
     scene.add(buretteGroup);
@@ -300,12 +300,12 @@ export default function TitrationSimulator3D() {
         }
         
         if (buretteGroupRef.current && isRunning) {
-          buretteGroupRef.current.position.y = 6.5 + Math.sin(Date.now() * 0.01) * 0.02;
+          (buretteGroupRef.current as THREE.Group).position.y = 6.5 + Math.sin(Date.now() * 0.01) * 0.02;
         }
         
         if (beakerGroupRef.current && isStirring) {
           const wobble = Math.sin(Date.now() * 0.003) * 0.01;
-          beakerGroupRef.current.rotation.z = wobble;
+          (beakerGroupRef.current as THREE.Group).rotation.z = wobble;
         }
         
         rendererRef.current.render(sceneRef.current, cameraRef.current);
@@ -383,7 +383,9 @@ export default function TitrationSimulator3D() {
   
   useEffect(() => {
     if (beakerLiquidRef.current && sceneReady) {
-      (beakerLiquidRef.current.material as THREE.MeshPhongMaterial).color = indicatorColor;
+      if (beakerLiquidRef.current) {
+        (beakerLiquidRef.current.material as THREE.MeshPhongMaterial).color = indicatorColor;
+      }
       
       const maxHeight = 3.2;
       const liquidHeight = ((solutionVol + titrantAdded) / 100) * maxHeight;
@@ -402,9 +404,9 @@ export default function TitrationSimulator3D() {
   useEffect(() => {
     if (stopcockRef.current && sceneReady) {
       if (isRunning) {
-        stopcockRef.current.rotation.z = Math.PI / 2;
+        (stopcockRef.current as THREE.Mesh).rotation.z = Math.PI / 2;
       } else {
-        stopcockRef.current.rotation.z = 0;
+        (stopcockRef.current as THREE.Mesh).rotation.z = 0;
       }
     }
   }, [isRunning, sceneReady]);

@@ -97,7 +97,6 @@ export class TitrationScene {
         
         // Find and add specific objects
         const beakerOuter = root.getObjectByName('Beaker_Outer')
-        // const beakerInner = root.getObjectByName('Beaker_Inner')
         const liquid = root.getObjectByName('Liquid_Mesh')
         const burette = root.getObjectByName('Burette_Root')
         
@@ -224,7 +223,7 @@ export class TitrationScene {
     window.addEventListener('keydown', this.onKeyDown.bind(this))
   }
 
-  private onClick(_event: MouseEvent): void {
+  private onClick(): void {
     this.startDropping()
   }
 
@@ -335,7 +334,6 @@ export class TitrationScene {
     material.opacity = color.a
 
     // Update liquid height
-    // const volume = this.chemistryEngine.getCurrentState().volumeL
     const height = this.chemistryEngine.getVolumeHeight(0.48) // beaker radius
     this.liquidMesh.scale.y = Math.max(0.1, height * 10) // scale factor
   }
