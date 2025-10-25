@@ -1,234 +1,198 @@
-# Titration Simulator
+# 🧪 Advanced 3D Titration Simulator
 
-An interactive 3D titration experiment simulator built with React, Three.js, and TypeScript. This educational tool allows students to perform virtual acid-base titrations with realistic animations and real-time pH monitoring.
+A professional-grade, cross-platform titration simulator built with React, Three.js, and TypeScript. Features realistic 3D laboratory environment, interactive chemistry simulations, and real-time data visualization.
 
-## Features
+![Titration Simulator](https://img.shields.io/badge/React-18.2.0-blue) ![Three.js](https://img.shields.io/badge/Three.js-0.160.0-green) ![TypeScript](https://img.shields.io/badge/TypeScript-5.2.2-blue) ![Vite](https://img.shields.io/badge/Vite-5.0.8-purple)
 
-- 🧪 **Realistic 3D Simulation**: Interactive beaker and burette with physics-based droplet animation
-- 📊 **Real-time pH Monitoring**: Live pH calculations and titration curve plotting
-- 🎨 **Visual Indicators**: Multiple pH indicators with color transitions
-- 💾 **Data Persistence**: Save and load experiments using IndexedDB
-- 📱 **Cross-platform**: Web-first with Android support via Capacitor
-- 🎓 **Educational**: Built-in tutorial and guidance system
+## ✨ Features
 
-## Quick Start
+### 🎮 **Interactive 3D Laboratory**
+- **Professional laboratory environment** with realistic materials
+- **Auto-rotating camera** with manual control
+- **Animated equipment** (burette vibration, beaker wobble)
+- **Continuous stream animation** for titrant flow
+- **Interactive stirring rod** with circular motion
+- **Stopcock rotation** when dispensing
+
+### 🧪 **Advanced Chemistry Engine**
+- **Real-time pH calculations** for acid-base titrations
+- **Color-changing liquid indicators** based on pH
+- **Volume tracking** in both beaker and burette
+- **Equivalence point calculation**
+- **Data collection** for titration curve analysis
+
+### 📊 **Professional UI & Analytics**
+- **Live titration curve plotting** with Recharts
+- **Glassmorphism design** with backdrop blur effects
+- **Real-time pH monitoring** and volume tracking
+- **Tutorial overlay** with interactive guide
+- **Responsive layout** for all screen sizes
+
+### 📱 **Cross-Platform Deployment**
+- **Web-first implementation** with React + Vite
+- **Android deployment** with Capacitor
+- **Mobile-optimized** touch controls
+- **Progressive Web App** capabilities
+
+## 🚀 Quick Start
 
 ### Prerequisites
-
-- Node.js 18+ and npm
-- Blender 3.x or 4.x (for 3D model generation)
-- Android Studio (for Android builds)
+- Node.js 18+ 
+- npm or yarn
+- Git
 
 ### Installation
 
-1. **Clone and install dependencies:**
 ```bash
-cd titration-app
+# Clone the repository
+git clone https://github.com/yourusername/advanced-3d-titration-simulator.git
+cd advanced-3d-titration-simulator
+
+# Install dependencies
 npm install
-```
 
-2. **Generate 3D models (optional):**
-   - Open Blender 3.x or 4.x
-   - Go to Scripting workspace
-   - Open `generate_beaker_burette.py` in the text editor
-   - Run the script (Play button)
-   - Export the "Titration_Export" collection as GLB format
-   - Save as `src/assets/beaker_burette.glb`
-
-3. **Start development server:**
-```bash
+# Start development server
 npm run dev
 ```
 
-4. **Open in browser:**
-   - Navigate to `http://localhost:3000`
-   - Follow the tutorial to get started
+Open [http://localhost:3000](http://localhost:3000) to view the simulator.
 
-### Building for Production
+## 🎯 Usage
 
+### **Basic Operation**
+1. **Configure your experiment** in the left panel
+2. **Click Start** to begin titration
+3. **Watch the continuous stream** flow from burette
+4. **Monitor pH changes** and color transitions
+5. **View the titration curve** in real-time
+
+### **Controls**
+- **🖱️ Drag** to rotate camera around the scene
+- **🖱️ Scroll** to zoom in/out
+- **🔄 Auto-rotate** for hands-free viewing
+- **▶️ Start/Pause** titration flow
+- **🌀 Stir** for magnetic stirrer
+- **🔄 Reset** to clear experiment data
+
+## 🛠️ Development
+
+### **Project Structure**
+```
+src/
+├── components/           # React components
+│   ├── SceneCanvas.tsx   # 3D scene renderer
+│   ├── BuretteControls.tsx
+│   ├── BeakerUI.tsx
+│   └── Graph.tsx
+├── lib/
+│   ├── chemistry/        # Chemistry engine
+│   ├── three/           # Three.js scene management
+│   └── storage/           # Data persistence
+├── titration-3d-sim-simple.tsx  # Advanced 3D simulator
+└── App.tsx              # Main application
+```
+
+### **Key Technologies**
+- **React 18** - UI framework
+- **Three.js** - 3D graphics
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **Recharts** - Data visualization
+- **Capacitor** - Mobile deployment
+
+### **Available Scripts**
 ```bash
-# Build web version
-npm run build
-
-# Preview production build
-npm run preview
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run android      # Build for Android
+npm run android-run  # Run on Android device
 ```
 
-### Android Setup
+## 🎨 Customization
 
-1. **Initialize Capacitor:**
+### **Visual Customization**
+- Modify lab bench colors in `src/lib/three/scene.ts`
+- Adjust lighting intensity and shadows
+- Customize UI colors in `tailwind.config.js`
+- Add new materials and textures
+
+### **Chemistry Customization**
+- Add new acid/base types in `src/lib/chemistry/engine.ts`
+- Implement weak acid calculations
+- Customize indicator colors
+- Add buffer solutions
+
+### **Animation Customization**
+- Adjust droplet/stream speed
+- Modify stirring animation
+- Change camera movement
+- Add particle effects
+
+## 📱 Mobile Deployment
+
+### **Android Setup**
 ```bash
-npx cap init titration-app com.example.titration
-npx cap add android
+# Install Capacitor
+npm run setup-capacitor
+
+# Build and deploy
+npm run android
 ```
 
-2. **Build and sync:**
-```bash
-npm run build
-npx cap copy android
-npx cap open android
-```
+### **Requirements**
+- Android Studio
+- Android SDK
+- Java Development Kit (JDK)
 
-3. **Run on device/emulator:**
-   - Use Android Studio to build and run
-   - Or use command line: `npx cap run android`
+## 🎓 Educational Features
 
-## Usage Guide
+### **Learning Objectives**
+- Understand acid-base titration principles
+- Visualize pH changes during titration
+- Learn about equivalence points
+- Practice laboratory techniques
 
-### Basic Operation
+### **Interactive Elements**
+- **Real-time feedback** on pH changes
+- **Visual indicators** for chemical reactions
+- **Data collection** and analysis
+- **Tutorial system** for guided learning
 
-1. **Start Experiment**: Click "Start Titration" to begin
-2. **Add Droplets**: Click anywhere on the scene or press Space
-3. **Monitor Changes**: Watch pH values and color transitions
-4. **View Graph**: Real-time titration curve updates
-5. **Save Results**: Click "Save Experiment" when finished
+## 📚 Documentation
 
-### Controls
+- **[Setup Guide](SETUP.md)** - Detailed installation instructions
+- **[Integration Guide](INTEGRATION.md)** - Advanced features
+- **[Blender Guide](BLENDER_TROUBLESHOOTING.md)** - 3D model creation
 
-- **Mouse/Touch**: Click to add droplets
-- **Keyboard**: Press Space to add droplets
-- **Mobile**: Tap screen to interact
-
-### Settings
-
-- **Concentration**: Adjust NaOH concentration (0.01-1.0 M)
-- **Droplet Size**: Control droplet volume (0.05-0.5 mL)
-- **Indicator**: Choose from Phenolphthalein, Methyl Orange, or Bromothymol Blue
-
-## Technical Architecture
-
-### Core Components
-
-- **Chemistry Engine** (`src/lib/chemistry/engine.ts`): pH calculations and solution state management
-- **3D Scene** (`src/lib/three/scene.ts`): Three.js scene with physics and animations
-- **Storage System** (`src/lib/storage/db.ts`): IndexedDB for experiment persistence
-- **React Components**: Modular UI components for controls and visualization
-
-### Key Technologies
-
-- **React 18**: Component-based UI framework
-- **Three.js**: 3D graphics and WebGL rendering
-- **TypeScript**: Type-safe development
-- **Chart.js**: Real-time data visualization
-- **IndexedDB**: Client-side data persistence
-- **Capacitor**: Cross-platform mobile deployment
-
-## Development
-
-### Project Structure
-
-```
-titration-app/
-├── src/
-│   ├── components/          # React UI components
-│   ├── lib/
-│   │   ├── chemistry/       # Chemistry calculations
-│   │   ├── three/           # 3D scene management
-│   │   └── storage/         # Data persistence
-│   └── assets/              # 3D models and resources
-├── public/                  # Static assets
-├── generate_beaker_burette.py  # Blender model generator
-└── capacitor.config.ts     # Capacitor configuration
-```
-
-### Adding New Features
-
-1. **New Chemistry Reactions**: Extend `ChemistryEngine` class
-2. **Additional Indicators**: Add to `indicator.ts` with color functions
-3. **UI Components**: Create new React components in `src/components/`
-4. **3D Models**: Use Blender script to generate new GLB models
-
-### Performance Optimization
-
-- **LOD Models**: Use lower-poly versions for distant objects
-- **Texture Compression**: Compress GLB files with gltf-transform
-- **Memory Management**: Dispose of Three.js objects properly
-- **Mobile Optimization**: Reduce particle effects on low-end devices
-
-## Troubleshooting
-
-### Common Issues
-
-1. **3D Models Not Loading**:
-   - Ensure GLB file is in `src/assets/`
-   - Check browser console for loading errors
-   - Verify model has correct node names
-
-2. **Performance Issues**:
-   - Reduce droplet spawn rate
-   - Lower Three.js render quality
-   - Disable shadows on mobile
-
-3. **Capacitor Build Errors**:
-   - Update Capacitor to latest version
-   - Clean Android project: `npx cap clean android`
-   - Check Android SDK installation
-
-4. **Blender Script Errors**:
-   - Ensure Blender 3.x or 4.x
-   - Check Python API compatibility
-   - Verify object selection before operations
-
-### Browser Compatibility
-
-- **Chrome/Edge**: Full support
-- **Firefox**: Full support
-- **Safari**: Full support (iOS 14+)
-- **Mobile Browsers**: Optimized for touch interaction
-
-## Educational Use
-
-### Learning Objectives
-
-- Understand acid-base chemistry concepts
-- Practice titration techniques
-- Learn pH indicator behavior
-- Analyze titration curves
-- Develop laboratory skills
-
-### Classroom Integration
-
-1. **Pre-lab Preparation**: Use tutorial to introduce concepts
-2. **Virtual Practice**: Students practice before real lab
-3. **Data Analysis**: Export CSV data for further study
-4. **Assessment**: Use saved experiments for evaluation
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## 🙏 Acknowledgments
 
-For technical support or educational inquiries:
-- Create an issue on GitHub
-- Contact: [sammuti.com](https://sammuti.com)
+- **Three.js** community for excellent 3D graphics library
+- **React** team for the amazing UI framework
+- **Tailwind CSS** for beautiful styling utilities
+- **Recharts** for data visualization
+- **Capacitor** for cross-platform deployment
 
-## Roadmap
+## 📞 Support
 
-### Planned Features
+If you have any questions or need help:
 
-- [ ] Multiple acid/base combinations
-- [ ] Weak acid/base calculations
-- [ ] 3D molecular visualization
-- [ ] Teacher dashboard
-- [ ] Multi-language support
-- [ ] Advanced analytics
-
-### Version History
-
-- **v1.0.0**: Initial release with basic titration simulation
-- **v1.1.0**: Added multiple indicators and data export
-- **v1.2.0**: Mobile optimization and Capacitor integration
-- **v1.3.0**: Enhanced 3D models and performance improvements
+1. Check the [documentation](SETUP.md)
+2. Search [existing issues](https://github.com/yourusername/advanced-3d-titration-simulator/issues)
+3. Create a [new issue](https://github.com/yourusername/advanced-3d-titration-simulator/issues/new)
 
 ---
 
-**Built with ❤️ for STEM education**
+**🎓 Perfect for STEM education and chemistry learning!** 🧪✨
