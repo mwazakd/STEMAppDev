@@ -22,7 +22,7 @@ export interface ExperimentData {
   }
 }
 
-interface TitrationDB extends DBSchema {
+interface TitrationDBSchema extends DBSchema {
   experiments: {
     key: string
     value: ExperimentData
@@ -34,10 +34,10 @@ interface TitrationDB extends DBSchema {
 }
 
 export class TitrationDB {
-  private dbPromise: Promise<IDBPDatabase<TitrationDB>>
+  private dbPromise: Promise<IDBPDatabase<TitrationDBSchema>>
 
   constructor() {
-    this.dbPromise = openDB<TitrationDB>('titration-db', 1, {
+    this.dbPromise = openDB<TitrationDBSchema>('titration-db', 1, {
       upgrade(db) {
         db.createObjectStore('experiments', { keyPath: 'id' })
         db.createObjectStore('settings', { keyPath: 'key' })

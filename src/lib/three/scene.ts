@@ -10,14 +10,14 @@ export class TitrationScene {
   private container: HTMLElement
   private chemistryEngine: ChemistryEngine
   private liquidMesh?: THREE.Mesh
-  private beakerMesh?: THREE.Group
-  private buretteMesh?: THREE.Group
+  // private beakerMesh?: THREE.Group
+  // private buretteMesh?: THREE.Group
   private dropletMeshes: THREE.Mesh[] = []
   private animationId?: number
   private mouse = new THREE.Vector2()
-  private raycaster = new THREE.Raycaster()
+  // private raycaster = new THREE.Raycaster()
   private isDropping = false
-  private dropletSpawnTimer = 0
+  // private dropletSpawnTimer = 0
   private dropletSpawnInterval = 100 // ms
 
   constructor(container: HTMLElement, chemistryEngine: ChemistryEngine) {

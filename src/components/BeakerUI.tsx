@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { ChemistryEngine } from '../lib/chemistry/engine'
 import { getIndicatorColor, getIndicatorName, getIndicatorRange } from '../lib/chemistry/indicator'
 

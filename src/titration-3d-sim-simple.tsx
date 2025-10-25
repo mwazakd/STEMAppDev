@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Play, Pause, RotateCcw, Info, Beaker } from 'lucide-react';
 import * as THREE from 'three';
 
-const calculatePH = (concentration, volume, type, titrantConc, titrantVol, titrantType) => {
+const calculatePH = (concentration: number, volume: number, type: string, titrantConc: number, titrantVol: number, titrantType: string) => {
   const totalVol = volume + titrantVol;
   if (totalVol === 0) return type === 'acid' ? 1 : 13;
   
@@ -38,7 +38,7 @@ const calculatePH = (concentration, volume, type, titrantConc, titrantVol, titra
   }
 };
 
-const getIndicatorColor = (pH) => {
+const getIndicatorColor = (pH: number) => {
   if (pH < 8.2) {
     return new THREE.Color(0.8, 0.8, 0.9);
   } else if (pH > 10) {
@@ -50,15 +50,15 @@ const getIndicatorColor = (pH) => {
 };
 
 export default function TitrationSimulator3D() {
-  const mountRef = useRef(null);
-  const sceneRef = useRef(null);
-  const cameraRef = useRef(null);
-  const rendererRef = useRef(null);
-  const beakerLiquidRef = useRef(null);
-  const buretteLiquidRef = useRef(null);
-  const dropletRef = useRef(null);
-  const stirRodRef = useRef(null);
-  const animationIdRef = useRef(null);
+  const mountRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const beakerLiquidRef = useRef<THREE.Mesh | null>(null);
+  const buretteLiquidRef = useRef<THREE.Mesh | null>(null);
+  const dropletRef = useRef<THREE.Mesh | null>(null);
+  const stirRodRef = useRef<THREE.Mesh | null>(null);
+  const animationIdRef = useRef<number | null>(null);
   
   const [solutionType, setSolutionType] = useState('acid');
   const [solutionConc, setSolutionConc] = useState(0.1);
@@ -67,7 +67,7 @@ export default function TitrationSimulator3D() {
   const [titrantConc, setTitrantConc] = useState(0.1);
   const [titrantAdded, setTitrantAdded] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<{volume: number, pH: number}[]>([]);
   const [showTutorial, setShowTutorial] = useState(false);
   const [isStirring, setIsStirring] = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
@@ -314,13 +314,13 @@ export default function TitrationSimulator3D() {
     };
     animate();
     
-    const handleMouseDown = (e) => {
+    const handleMouseDown = (e: MouseEvent) => {
       mouseDownRef.current = true;
       lastMouseRef.current = { x: e.clientX, y: e.clientY };
       setAutoRotate(false);
     };
     
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: MouseEvent) => {
       if (mouseDownRef.current && cameraRef.current) {
         const deltaX = e.clientX - lastMouseRef.current.x;
         const deltaY = e.clientY - lastMouseRef.current.y;
@@ -343,7 +343,7 @@ export default function TitrationSimulator3D() {
       mouseDownRef.current = false;
     };
     
-    const handleWheel = (e) => {
+    const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       if (cameraRef.current) {
         const delta = e.deltaY * 0.01;

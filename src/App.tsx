@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import TitrationSimulator3D from './titration-3d-sim-simple'
 import SceneCanvas from './components/SceneCanvas'
 import BuretteControls from './components/BuretteControls'
@@ -14,7 +14,7 @@ function App() {
   const [db] = useState(() => new TitrationDB())
   const [isExperimentActive, setIsExperimentActive] = useState(false)
   const [showTutorial, setShowTutorial] = useState(true)
-  const [currentExperiment, setCurrentExperiment] = useState<string | null>(null)
+  const [, setCurrentExperiment] = useState<string | null>(null)
   const [useAdvanced3D, setUseAdvanced3D] = useState(true) // Toggle between simple and advanced 3D
 
   const handleStartExperiment = () => {

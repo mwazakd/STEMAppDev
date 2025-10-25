@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { TitrationScene } from '../lib/three/scene'
 import { ChemistryEngine } from '../lib/chemistry/engine'
 
