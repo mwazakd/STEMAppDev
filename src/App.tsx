@@ -53,20 +53,20 @@ function App() {
     }
   }
 
-  const handleLoadExperiment = async (experimentId: string) => {
-    try {
-      const experiment = await db.getExperiment(experimentId)
-      if (experiment) {
-        // Reset and load experiment data
-        chemistryEngine.reset()
-        // Note: In a real implementation, you'd need to restore the chemistry state
-        setCurrentExperiment(experimentId)
-        setIsExperimentActive(true)
-      }
-    } catch (error) {
-      console.error('Failed to load experiment:', error)
-    }
-  }
+  // const handleLoadExperiment = async (experimentId: string) => {
+  //   try {
+  //     const experiment = await db.getExperiment(experimentId)
+  //     if (experiment) {
+  //       // Reset and load experiment data
+  //       chemistryEngine.reset()
+  //       // Note: In a real implementation, you'd need to restore the chemistry state
+  //       setCurrentExperiment(experimentId)
+  //       setIsExperimentActive(true)
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to load experiment:', error)
+  //   }
+  // }
 
   // Use the advanced 3D simulator if enabled
   if (useAdvanced3D) {

@@ -79,9 +79,9 @@ export default function TitrationSimulator3D() {
   const lastMouseRef = useRef({ x: 0, y: 0 });
   const cameraAngleRef = useRef({ theta: 0, phi: Math.PI / 4 });
   const autoRotateRef = useRef(0);
-  const buretteGroupRef = useRef(null);
-  const stopcockRef = useRef(null);
-  const beakerGroupRef = useRef(null);
+  const buretteGroupRef = useRef<THREE.Group | null>(null);
+  const stopcockRef = useRef<THREE.Mesh | null>(null);
+  const beakerGroupRef = useRef<THREE.Group | null>(null);
   
   const currentPH = useMemo(() => {
     return calculatePH(solutionConc, solutionVol, solutionType, titrantConc, titrantAdded, titrantType);
@@ -383,7 +383,7 @@ export default function TitrationSimulator3D() {
   
   useEffect(() => {
     if (beakerLiquidRef.current && sceneReady) {
-      beakerLiquidRef.current.material.color = indicatorColor;
+      (beakerLiquidRef.current.material as THREE.MeshPhongMaterial).color = indicatorColor;
       
       const maxHeight = 3.2;
       const liquidHeight = ((solutionVol + titrantAdded) / 100) * maxHeight;
@@ -444,17 +444,19 @@ export default function TitrationSimulator3D() {
         });
         
         // Create multiple stream segments for continuous flow
-        const streamSegments = [];
+        const streamSegments: THREE.Mesh[] = [];
         for (let i = 0; i < 8; i++) {
           const segment = new THREE.Mesh(streamGeometry, streamMaterial);
           segment.position.set(0, 3.5 - (i * 0.4), 0);
           segment.visible = true;
-          sceneRef.current.add(segment);
+          if (sceneRef.current) {
+            sceneRef.current.add(segment);
+          }
           streamSegments.push(segment);
         }
         
         const interval = setInterval(() => {
-          streamSegments.forEach((segment, index) => {
+          streamSegments.forEach((segment) => {
             segment.position.y -= 0.15;
             if (segment.position.y < -0.5) {
               segment.position.y = 3.5;
@@ -465,7 +467,9 @@ export default function TitrationSimulator3D() {
         return () => {
           clearInterval(interval);
           streamSegments.forEach(segment => {
-            sceneRef.current.remove(segment);
+            if (sceneRef.current) {
+              sceneRef.current.remove(segment);
+            }
           });
         };
       } else {
