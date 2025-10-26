@@ -57,7 +57,6 @@ export default function TitrationSimulator3D() {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const beakerLiquidRef = useRef<THREE.Mesh | null>(null);
   const beakerLiquidSurfaceRef = useRef<THREE.Mesh | null>(null);
-  const buretteLiquidRef = useRef<THREE.Mesh | null>(null);
   const dropletRef = useRef<THREE.Mesh | null>(null);
   const stirRodRef = useRef<THREE.Mesh | null>(null);
   const animationIdRef = useRef<number | null>(null);

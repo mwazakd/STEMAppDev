@@ -1,4 +1,3 @@
-import React from 'react';
 import GlassmorphismBeaker from './GlassmorphismBeaker';
 
 export default function TestGlassmorphism() {

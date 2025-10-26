@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Droplets } from 'lucide-react';
 
@@ -384,7 +384,7 @@ export default function GlassmorphismBeaker() {
       // Update surface position
       const children = beakerRef.current.children;
       for (let child of children) {
-        if (child.geometry && child.geometry.type === 'CircleGeometry') {
+        if (child instanceof THREE.Mesh && child.geometry instanceof THREE.CircleGeometry) {
           child.position.y = liquidRef.current.position.y + (height * 0.5);
         }
       }

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 
 interface IntegratedGlassmorphismBuretteProps {
@@ -20,7 +20,6 @@ export default function IntegratedGlassmorphismBurette({
   liquidColor = "#1976d2",
   stopcockOpen = false,
   onStopcockToggle,
-  onLiquidLevelChange,
   scene,
   groupRef
 }: IntegratedGlassmorphismBuretteProps) {
@@ -38,7 +37,9 @@ export default function IntegratedGlassmorphismBurette({
     buretteGroup.position.copy(position);
     buretteGroup.scale.setScalar(scale);
     buretteGroupRef.current = buretteGroup;
-    if (groupRef) groupRef.current = buretteGroup;
+    if (groupRef) {
+      (groupRef as React.MutableRefObject<THREE.Group | null>).current = buretteGroup;
+    }
 
     const tubeVisibleLength = 6.0;
     const outerRadius = 0.2;
@@ -158,14 +159,13 @@ export default function IntegratedGlassmorphismBurette({
     buretteGroup.add(liquid);
 
     // Meniscus
-    const menPts = [];
+    const menPts: THREE.Vector2[] = [];
     const menRadius = innerRadius - 0.002;
     for (let i = 0; i <= 32; i++) {
       const angle = (i / 32) * Math.PI * 2;
       const x = Math.cos(angle) * menRadius;
-      const z = Math.sin(angle) * menRadius;
       const y = Math.cos(angle * 2) * 0.008;
-      menPts.push(new THREE.Vector3(x, y, z));
+      menPts.push(new THREE.Vector2(x, y));
     }
     const menGeo = new THREE.LatheGeometry(menPts, 32);
     const menMat = new THREE.MeshPhysicalMaterial({
@@ -229,6 +229,7 @@ export default function IntegratedGlassmorphismBurette({
         canvas.width = 128;
         canvas.height = 64;
         const ctx = canvas.getContext("2d");
+        if (!ctx) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#d8efff";
         ctx.font = "bold 30px Arial";
@@ -249,13 +250,6 @@ export default function IntegratedGlassmorphismBurette({
 
     buretteGroup.add(labels);
     scene.add(buretteGroup);
-
-    // Click handler for stopcock
-    const handleClick = (event: MouseEvent) => {
-      if (onStopcockToggle) {
-        onStopcockToggle();
-      }
-    };
 
     // Add click listener to stopcock
     if (scGroup) {
@@ -294,9 +288,15 @@ export default function IntegratedGlassmorphismBurette({
   // Update liquid color
   useEffect(() => {
     const c = new THREE.Color(liquidColor);
-    if (liquidRef.current) liquidRef.current.material.color.set(c);
-    if (meniscusRef.current) meniscusRef.current.material.color.set(c);
-    if (streamRef.current) streamRef.current.material.color.set(c);
+    if (liquidRef.current && liquidRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+      liquidRef.current.material.color.set(c);
+    }
+    if (meniscusRef.current && meniscusRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+      meniscusRef.current.material.color.set(c);
+    }
+    if (streamRef.current && streamRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+      streamRef.current.material.color.set(c);
+    }
   }, [liquidColor]);
 
   // Update stream visibility

@@ -1,19 +1,19 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 export default function GlassmorphismBurette() {
-  const mountRef = useRef(null);
+  const mountRef = useRef<HTMLDivElement>(null);
 
-  const rendererRef = useRef(null);
-  const cameraRef = useRef(null);
-  const sceneRef = useRef(null);
-  const animRef = useRef(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const animRef = useRef<number | null>(null);
 
-  const liquidRef = useRef(null);
-  const meniscusRef = useRef(null);
-  const stopcockRef = useRef(null);
-  const streamRef = useRef(null);
-  const labelGroupRef = useRef(null);
+  const liquidRef = useRef<THREE.Mesh | null>(null);
+  const meniscusRef = useRef<THREE.Mesh | null>(null);
+  const stopcockRef = useRef<THREE.Group | null>(null);
+  const streamRef = useRef<THREE.Mesh | null>(null);
+  const labelGroupRef = useRef<THREE.Group | null>(null);
 
   const [liquidLevel, setLiquidLevel] = useState(75);
   const [liquidColor, setLiquidColor] = useState("#1976d2");
@@ -274,6 +274,7 @@ export default function GlassmorphismBurette() {
         canvas.width = 128;
         canvas.height = 64;
         const ctx = canvas.getContext("2d");
+        if (!ctx) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#d8efff";
         ctx.font = "bold 30px Arial";
@@ -295,7 +296,7 @@ export default function GlassmorphismBurette() {
 
     burette.add(labels);
 
-    const applyLiquid = (pct) => {
+    const applyLiquid = (pct: number) => {
       const clamped = Math.max(0, Math.min(100, pct));
       const scale = clamped / 100;
       if (liquidRef.current) {
@@ -323,13 +324,13 @@ export default function GlassmorphismBurette() {
     let lastY = 0;
     let theta = 0.8;
     let phi = 1.0;
-    const onMouseDown = (e) => {
+    const onMouseDown = (e: MouseEvent) => {
       isDragging = true;
       lastX = e.clientX;
       lastY = e.clientY;
       setAutoRotate(false);
     };
-    const onMouseMove = (e) => {
+    const onMouseMove = (e: MouseEvent) => {
       if (!isDragging || !cameraRef.current) return;
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
@@ -354,7 +355,7 @@ export default function GlassmorphismBurette() {
 
     const ray = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
-    const onClick = (ev) => {
+    const onClick = (ev: MouseEvent) => {
       if (!rendererRef.current || !cameraRef.current) return;
       const rect = rendererRef.current.domElement.getBoundingClientRect();
       mouse.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
@@ -371,7 +372,7 @@ export default function GlassmorphismBurette() {
 
     const clock = new THREE.Clock();
     const animate = () => {
-      const t = clock.getElapsedTime();
+      const elapsedTime = clock.getElapsedTime();
       if (autoRotate && !isDragging && cameraRef.current) {
         theta += 0.0025;
         const r = 7.0;
