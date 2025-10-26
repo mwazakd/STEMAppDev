@@ -18,7 +18,6 @@ export default function GlassmorphismBurette() {
   const [liquidLevel, setLiquidLevel] = useState(75);
   const [liquidColor, setLiquidColor] = useState("#1976d2");
   const [stopcockOpen, setStopcockOpen] = useState(false);
-  const [dispensing, setDispensing] = useState(false);
   const [autoRotate, setAutoRotate] = useState(true);
 
   useEffect(() => {
@@ -381,13 +380,15 @@ export default function GlassmorphismBurette() {
         cameraRef.current.lookAt(0, 0.6, 0);
       }
 
-      if (dispensing && stopcockOpen && liquidRef.current) {
+      // Liquid flows when stopcock is open (realistic behavior)
+      if (stopcockOpen && liquidRef.current) {
         if (streamRef.current) streamRef.current.visible = true;
         setLiquidLevel((prev) => {
           const next = Math.max(0, +(prev - 0.18).toFixed(2));
           applyLiquid(next);
           if (next <= 0) {
-            setDispensing(false);
+            // Auto-close stopcock when empty
+            setStopcockOpen(false);
             if (streamRef.current) streamRef.current.visible = false;
           }
           return next;
@@ -456,20 +457,6 @@ export default function GlassmorphismBurette() {
     stopcockRef.current.rotation.x = stopcockOpen ? Math.PI / 2 : 0;
   }, [stopcockOpen]);
 
-  useEffect(() => {
-    if (dispensing && !stopcockOpen) {
-      setDispensing(false);
-      alert("Open the stopcock first (click its handle) to dispense.");
-    }
-  }, [dispensing, stopcockOpen]);
-
-  const toggleDispense = () => {
-    if (!stopcockOpen) {
-      alert("Open the stopcock (click handle) before dispensing.");
-      return;
-    }
-    setDispensing((s) => !s);
-  };
 
   return (
     <div className="w-full h-screen bg-gradient-to-b from-slate-950 via-indigo-900 to-slate-900 text-white flex flex-col">
@@ -508,12 +495,6 @@ export default function GlassmorphismBurette() {
             </div>
 
             <div>
-              <button onClick={toggleDispense} className={`w-full py-2 rounded ${dispensing ? "bg-red-600" : "bg-green-600"} font-semibold`}>
-                {dispensing ? "Stop Dispensing" : "Start Dispensing"}
-              </button>
-            </div>
-
-            <div>
               <button onClick={() => setStopcockOpen((s) => !s)} className="w-full py-2 rounded bg-slate-700 hover:bg-slate-600">
                 {stopcockOpen ? "Close Stopcock" : "Open Stopcock"}
               </button>
@@ -526,7 +507,7 @@ export default function GlassmorphismBurette() {
             </div>
 
             <div className="text-xs text-slate-300 pt-2 bg-slate-800 bg-opacity-50 p-3 rounded">
-              <p><strong>Tip:</strong> Click the stopcock handle in the 3D view to toggle it. Drag to rotate the camera.</p>
+              <p><strong>Tip:</strong> Click the stopcock handle in the 3D view to open/close it. Liquid flows automatically when open. Drag to rotate the camera.</p>
             </div>
           </div>
         </aside>
