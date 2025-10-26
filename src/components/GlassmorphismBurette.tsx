@@ -376,7 +376,6 @@ export default function GlassmorphismBurette() {
     };
     renderer.domElement.addEventListener("click", onClick);
 
-    const clock = new THREE.Clock();
     const animate = () => {
       if (autoRotate && !isDragging && cameraRef.current) {
         theta += 0.0025;
