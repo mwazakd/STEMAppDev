@@ -183,23 +183,48 @@ export default function IntegratedGlassmorphismBurette({
     meniscusRef.current = menMesh;
     buretteGroup.add(menMesh);
 
-    // Stream visualization
-    const streamGeom = new THREE.CylinderGeometry(0.018, 0.02, 0.9, 12);
+    // Stream visualization - improved for better visibility
+    const streamGeom = new THREE.CylinderGeometry(0.015, 0.02, 1.2, 12);
     const streamMat = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color(liquidColor),
       transparent: true,
-      opacity: 0.7,
-      transmission: 0.6,
-      roughness: 0.05
+      opacity: 0.8,
+      transmission: 0.3,
+      roughness: 0.1,
+      metalness: 0.0
     });
     const streamMesh = new THREE.Mesh(streamGeom, streamMat);
     streamMesh.visible = false;
     streamRef.current = streamMesh;
-    // Position stream relative to burette group
-    streamMesh.position.y = outlet.position.y - 0.5;
+    // Position stream closer to outlet for better visibility
+    streamMesh.position.y = outlet.position.y - 0.6;
     streamMesh.position.x = 0;
     streamMesh.position.z = 0;
+    // Add slight rotation to make it more visible from side angles
+    streamMesh.rotation.x = 0.1;
     buretteGroup.add(streamMesh);
+
+    // Additional stream droplets for better visibility
+    const dropletGeom = new THREE.SphereGeometry(0.008, 8, 8);
+    const dropletMat = new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color(liquidColor),
+      transparent: true,
+      opacity: 0.9,
+      transmission: 0.2,
+      roughness: 0.05,
+      metalness: 0.0
+    });
+    
+    // Create multiple droplets along the stream path
+    for (let i = 0; i < 3; i++) {
+      const droplet = new THREE.Mesh(dropletGeom, dropletMat);
+      droplet.visible = false;
+      droplet.position.y = outlet.position.y - 0.3 - (i * 0.2);
+      droplet.position.x = 0;
+      droplet.position.z = 0;
+      droplet.userData = { isStreamDroplet: true };
+      buretteGroup.add(droplet);
+    }
 
     // Grading labels
     const labels = new THREE.Group();
@@ -297,12 +322,30 @@ export default function IntegratedGlassmorphismBurette({
     if (liquidRef.current) liquidRef.current.material.color.set(c);
     if (meniscusRef.current) meniscusRef.current.material.color.set(c);
     if (streamRef.current) streamRef.current.material.color.set(c);
+    
+    // Update droplet colors
+    if (buretteGroupRef.current) {
+      buretteGroupRef.current.children.forEach(child => {
+        if (child.userData && child.userData.isStreamDroplet) {
+          child.material.color.set(c);
+        }
+      });
+    }
   }, [liquidColor]);
 
   // Update stream visibility
   useEffect(() => {
     if (streamRef.current) {
       streamRef.current.visible = stopcockOpen && liquidLevel > 0;
+    }
+    
+    // Update droplet visibility
+    if (buretteGroupRef.current) {
+      buretteGroupRef.current.children.forEach(child => {
+        if (child.userData && child.userData.isStreamDroplet) {
+          child.visible = stopcockOpen && liquidLevel > 0;
+        }
+      });
     }
   }, [stopcockOpen, liquidLevel]);
 
