@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Play, Pause, RotateCcw, Info, Beaker } from 'lucide-react';
 import * as THREE from 'three';
+import IntegratedGlassmorphismBurette from './components/IntegratedGlassmorphismBurette';
 
 const calculatePH = (concentration: number, volume: number, type: string, titrantConc: number, titrantVol: number, titrantType: string) => {
   const totalVol = volume + titrantVol;
@@ -73,6 +74,8 @@ export default function TitrationSimulator3D() {
   const [isStirring, setIsStirring] = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
   const [autoRotate, setAutoRotate] = useState(true);
+  const [buretteStopcockOpen, setBuretteStopcockOpen] = useState(false);
+  const [buretteLiquidLevel, setBuretteLiquidLevel] = useState(100);
   
   const lastUpdateRef = useRef(Date.now());
   const stirAngleRef = useRef(0);
@@ -80,8 +83,7 @@ export default function TitrationSimulator3D() {
   const lastMouseRef = useRef({ x: 0, y: 0 });
   const cameraAngleRef = useRef({ theta: 0, phi: Math.PI / 4 });
   const autoRotateRef = useRef(0);
-  const buretteGroupRef = useRef<THREE.Group | null>(null);
-  const stopcockRef = useRef<THREE.Mesh | null>(null);
+  const glassmorphismBuretteRef = useRef<THREE.Group | null>(null);
   const beakerGroupRef = useRef<THREE.Group | null>(null);
   
   const currentPH = useMemo(() => {
@@ -324,52 +326,7 @@ export default function TitrationSimulator3D() {
     
     scene.add(standGroup);
     
-    const buretteGroup = new THREE.Group();
-    buretteGroup.position.set(0, 6.5, 0);
-    (buretteGroupRef as React.MutableRefObject<THREE.Group>).current = buretteGroup;
-    
-    const buretteTubeGeometry = new THREE.CylinderGeometry(0.18, 0.18, 5, 32, 1, true);
-    const buretteGlassMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.3,
-      roughness: 0.05,
-      metalness: 0.05,
-      transmission: 0.9,
-      thickness: 0.3
-    });
-    const buretteTube = new THREE.Mesh(buretteTubeGeometry, buretteGlassMaterial);
-    buretteTube.castShadow = true;
-    buretteGroup.add(buretteTube);
-    
-    const buretteLiquidGeometry = new THREE.CylinderGeometry(0.15, 0.15, 5, 32);
-    const buretteLiquidMaterial = new THREE.MeshPhongMaterial({
-      color: 0x4488ff,
-      transparent: true,
-      opacity: 0.7,
-      shininess: 100
-    });
-    const buretteLiquid = new THREE.Mesh(buretteLiquidGeometry, buretteLiquidMaterial);
-    buretteLiquidRef.current = buretteLiquid;
-    buretteGroup.add(buretteLiquid);
-    
-    const tipGeometry = new THREE.CylinderGeometry(0.04, 0.08, 0.5, 16);
-    const tip = new THREE.Mesh(tipGeometry, buretteGlassMaterial);
-    tip.position.y = -2.75;
-    buretteGroup.add(tip);
-    
-    const stopcockGeometry = new THREE.BoxGeometry(0.5, 0.1, 0.1);
-    const stopcockMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0x555555,
-      roughness: 0.5,
-      metalness: 0.7
-    });
-    const stopcock = new THREE.Mesh(stopcockGeometry, stopcockMaterial);
-    stopcock.position.y = -2.4;
-    (stopcockRef as React.MutableRefObject<THREE.Mesh>).current = stopcock;
-    buretteGroup.add(stopcock);
-    
-    scene.add(buretteGroup);
+    // Glassmorphism burette will be added by the IntegratedGlassmorphismBurette component
     
     const dropletGeometry = new THREE.SphereGeometry(0.08, 16, 16);
     const dropletMaterial = new THREE.MeshPhongMaterial({
@@ -416,8 +373,8 @@ export default function TitrationSimulator3D() {
           cameraRef.current.lookAt(0, 2, 0);
         }
         
-        if (buretteGroupRef.current && isRunning) {
-          (buretteGroupRef.current as THREE.Group).position.y = 6.5 + Math.sin(Date.now() * 0.01) * 0.02;
+        if (glassmorphismBuretteRef.current && isRunning) {
+          (glassmorphismBuretteRef.current as THREE.Group).position.y = 6.5 + Math.sin(Date.now() * 0.01) * 0.02;
         }
         
         if (beakerGroupRef.current && isStirring) {
@@ -520,23 +477,18 @@ export default function TitrationSimulator3D() {
       }
     }
     
-    if (buretteLiquidRef.current && sceneReady) {
-      const remaining = 100 - titrantAdded;
-      const scale = remaining / 100;
-      buretteLiquidRef.current.scale.y = scale;
-      buretteLiquidRef.current.position.y = -2.5 * (1 - scale);
+    // Update glassmorphism burette liquid level based on titrant added
+    const remainingTitrant = 100 - titrantAdded;
+    setBuretteLiquidLevel(Math.max(0, remainingTitrant));
+    
+    // Auto-open stopcock when titration is running
+    if (isRunning && !buretteStopcockOpen) {
+      setBuretteStopcockOpen(true);
+    } else if (!isRunning && buretteStopcockOpen) {
+      setBuretteStopcockOpen(false);
     }
   }, [indicatorColor, solutionVol, titrantAdded, sceneReady]);
   
-  useEffect(() => {
-    if (stopcockRef.current && sceneReady) {
-      if (isRunning) {
-        (stopcockRef.current as THREE.Mesh).rotation.z = Math.PI / 2;
-      } else {
-        (stopcockRef.current as THREE.Mesh).rotation.z = 0;
-      }
-    }
-  }, [isRunning, sceneReady]);
   
   useEffect(() => {
     if (isRunning) {
@@ -654,6 +606,20 @@ export default function TitrationSimulator3D() {
   
   return (
     <div className="w-full h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 overflow-hidden flex flex-col">
+      {/* Glassmorphism Burette Component */}
+      {sceneRef.current && (
+        <IntegratedGlassmorphismBurette
+          position={new THREE.Vector3(0, 6.5, 0)}
+          scale={1}
+          liquidLevel={buretteLiquidLevel}
+          liquidColor="#4488ff"
+          stopcockOpen={buretteStopcockOpen}
+          onStopcockToggle={() => setBuretteStopcockOpen(!buretteStopcockOpen)}
+          onLiquidLevelChange={setBuretteLiquidLevel}
+          scene={sceneRef.current}
+          groupRef={glassmorphismBuretteRef}
+        />
+      )}
       <div className="bg-black bg-opacity-40 backdrop-blur-md p-4 border-b border-cyan-500 border-opacity-30 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
