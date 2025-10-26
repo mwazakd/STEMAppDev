@@ -29,6 +29,7 @@ export default function RealisticBuretteClamp() {
   const autoAngleRef = useRef(0);
   const mouseDownRef = useRef(false);
   const lastMouseRef = useRef({ x: 0, y: 0 });
+  const liquidLevelRef = useRef(75); // Track liquid level without React re-renders
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -478,15 +479,18 @@ export default function RealisticBuretteClamp() {
       // Handle dispensing
       if (dispensing && stopcockOpen && liquidRef.current) {
         if (streamRef.current) streamRef.current.visible = true;
-        setLiquidLevel((prev) => {
-          const next = Math.max(0, +(prev - 0.18).toFixed(2));
-          applyLiquid(next);
-          if (next <= 0) {
-            setDispensing(false);
-            if (streamRef.current) streamRef.current.visible = false;
-          }
-          return next;
-        });
+        liquidLevelRef.current = Math.max(0, liquidLevelRef.current - 0.05); // Smooth decrement
+        applyLiquid(liquidLevelRef.current);
+        
+        // Update React state only every 10 frames to reduce re-renders
+        if (Math.floor(Date.now() / 100) % 10 === 0) {
+          setLiquidLevel(liquidLevelRef.current);
+        }
+        
+        if (liquidLevelRef.current <= 0) {
+          setDispensing(false);
+          if (streamRef.current) streamRef.current.visible = false;
+        }
       } else {
         if (streamRef.current) streamRef.current.visible = false;
       }
@@ -620,6 +624,7 @@ export default function RealisticBuretteClamp() {
     const maxLiquidHeight = tubeVisibleLength - 0.06;
     if (liquidRef.current && meniscusRef.current) {
       const pct = Math.max(0, Math.min(100, liquidLevel));
+      liquidLevelRef.current = pct; // Sync ref with state
       const scale = pct / 100;
       liquidRef.current.scale.y = scale;
       const visibleH = maxLiquidHeight * scale;
