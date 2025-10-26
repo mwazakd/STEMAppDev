@@ -216,7 +216,7 @@ export default function TitrationSimulator3D() {
     const liquidMaterial = new THREE.MeshPhysicalMaterial({
       color: 0x4488ff,
       transparent: true,
-      opacity: 0.4, // Reduced from 0.85 to 0.4 for better stream visibility
+      opacity: 0.85,
       roughness: 0.1,
       metalness: 0.1,
       transmission: 0.3,
@@ -236,7 +236,7 @@ export default function TitrationSimulator3D() {
     const surfaceMaterial = new THREE.MeshPhysicalMaterial({
       color: 0x4488ff,
       transparent: true,
-      opacity: 0.3, // Reduced from 0.6 to 0.3 for better stream visibility
+      opacity: 0.6,
       roughness: 0.05,
       metalness: 0.3,
       transmission: 0.4,
