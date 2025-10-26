@@ -75,6 +75,7 @@ export default function TitrationSimulator3D() {
   const [autoRotate, setAutoRotate] = useState(true);
   const [buretteStopcockOpen, setBuretteStopcockOpen] = useState(false);
   const [buretteLiquidLevel, setBuretteLiquidLevel] = useState(100);
+  const [buretteGripWidth, setBuretteGripWidth] = useState(25); // Default to burette diameter grip
   
   const lastUpdateRef = useRef(Date.now());
   const stirAngleRef = useRef(0);
@@ -314,16 +315,16 @@ export default function TitrationSimulator3D() {
     
     const rodGeometry = new THREE.CylinderGeometry(0.1, 0.1, 8, 16);
     const verticalRod = new THREE.Mesh(rodGeometry, metalMaterial);
-    verticalRod.position.set(2.8, 4, 0); // Moved further away from beaker (was 1.5, now 2.8)
+    // Position rod to just touch the mounting bracket base at (0, 4.1, -2) after rotation
+    // After rotation: (x, y, z) becomes (-z, y, x)
+    // So to get (0, 4.1, -2), we need (-(-2), 4.1, 0) = (2, 4.1, 0)
+    verticalRod.position.set(2, 4.1, 0);
     verticalRod.castShadow = true;
     standGroup.add(verticalRod);
     
-    const horizontalArmGeometry = new THREE.CylinderGeometry(0.08, 0.08, 3.5, 16); // Increased length to reach beaker
-    const horizontalArm = new THREE.Mesh(horizontalArmGeometry, metalMaterial);
-    horizontalArm.position.set(1.4, 6.5, 0); // Adjusted position to reach beaker
-    horizontalArm.rotation.z = Math.PI / 2;
-    horizontalArm.castShadow = true;
-    standGroup.add(horizontalArm);
+    // Rotate the entire stand group counterclockwise (anticlockwise) when viewed from above
+    // This aligns the vertical rod with the mounting bracket of the clamp
+    standGroup.rotation.y = Math.PI / 2; // 90 degrees counterclockwise
     
     scene.add(standGroup);
     
@@ -623,6 +624,7 @@ export default function TitrationSimulator3D() {
           onLiquidLevelChange={setBuretteLiquidLevel}
           scene={sceneRef.current}
           groupRef={glassmorphismBuretteRef}
+          gripWidth={buretteGripWidth}
         />
       )}
       <div className="bg-black bg-opacity-40 backdrop-blur-md p-4 border-b border-cyan-500 border-opacity-30 shadow-lg">
@@ -827,6 +829,19 @@ export default function TitrationSimulator3D() {
             >
               {autoRotate ? '🔄 Auto-Rotate ON' : '⏸️ Auto-Rotate OFF'}
             </button>
+            <div className="bg-black bg-opacity-70 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm shadow-lg">
+              <label className="block text-xs font-medium text-cyan-200 mb-1">
+                Clamp Grip: {buretteGripWidth}%
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={buretteGripWidth}
+                onChange={(e) => setBuretteGripWidth(parseInt(e.target.value))}
+                className="w-full accent-cyan-500"
+              />
+            </div>
           </div>
           {!sceneReady && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">

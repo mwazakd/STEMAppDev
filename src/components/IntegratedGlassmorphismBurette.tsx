@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
+import BuretteClamp from "./BuretteClamp";
 
 interface IntegratedGlassmorphismBuretteProps {
   position?: THREE.Vector3;
@@ -11,6 +12,7 @@ interface IntegratedGlassmorphismBuretteProps {
   onLiquidLevelChange?: (level: number) => void;
   scene: THREE.Scene;
   groupRef?: React.RefObject<THREE.Group>;
+  gripWidth?: number; // Add grip width control
 }
 
 export default function IntegratedGlassmorphismBurette({
@@ -21,7 +23,8 @@ export default function IntegratedGlassmorphismBurette({
   stopcockOpen = false,
   onStopcockToggle,
   scene,
-  groupRef
+  groupRef,
+  gripWidth = 25
 }: IntegratedGlassmorphismBuretteProps) {
   const liquidRef = useRef<THREE.Mesh | null>(null);
   const meniscusRef = useRef<THREE.Mesh | null>(null);
@@ -29,6 +32,7 @@ export default function IntegratedGlassmorphismBurette({
   const streamRef = useRef<THREE.Mesh | null>(null);
   const labelGroupRef = useRef<THREE.Group | null>(null);
   const buretteGroupRef = useRef<THREE.Group | null>(null);
+  const clampGroupRef = useRef<THREE.Group | null>(null);
 
   useEffect(() => {
     if (!scene) return;
@@ -306,5 +310,15 @@ export default function IntegratedGlassmorphismBurette({
     }
   }, [stopcockOpen, liquidLevel]);
 
-  return null; // This component only manages 3D objects
+  return (
+    <>
+      <BuretteClamp
+        position={position}
+        scale={scale}
+        gripWidth={gripWidth}
+        scene={scene}
+        groupRef={clampGroupRef}
+      />
+    </>
+  );
 }
