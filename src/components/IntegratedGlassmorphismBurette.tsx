@@ -64,23 +64,40 @@ export default function IntegratedGlassmorphismBurette({
     outerMesh.castShadow = true;
     buretteGroup.add(outerMesh);
 
-    // Outlet tip
-    const outletGeom = new THREE.ConeGeometry(0.08, 0.4, 16);
-    const outletMat = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      transmission: 0.95,
-      transparent: true,
-      opacity: 0.15,
-      roughness: 0.02,
-      metalness: 0.02,
-      ior: 1.52,
-      thickness: 0.4,
-      clearcoat: 1.0
-    });
-    const outlet = new THREE.Mesh(outletGeom, outletMat);
-    outlet.position.y = -tubeVisibleLength / 2 - 0.2;
-    outlet.castShadow = true;
+    // Neck section
+    const neck = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.15, outerRadius, 0.12, 32),
+      glassMat.clone()
+    );
+    neck.position.y = -tubeVisibleLength / 2 - 0.24;
+    buretteGroup.add(neck);
+
+    // Tapered section
+    const taperLength = 0.7;
+    const taper = new THREE.Mesh(
+      new THREE.ConeGeometry(0.065, taperLength, 48),
+      glassMat.clone()
+    );
+    taper.position.y = -tubeVisibleLength / 2 - 0.24 - taperLength / 2 - 0.08;
+    taper.rotation.x = Math.PI;
+    buretteGroup.add(taper);
+
+    // Narrow outlet
+    const outletOuter = 0.0125;
+    const outlet = new THREE.Mesh(
+      new THREE.CylinderGeometry(outletOuter, outletOuter, 0.14, 20),
+      glassMat.clone()
+    );
+    outlet.position.y = taper.position.y - taperLength / 2 - 0.07;
     buretteGroup.add(outlet);
+
+    // Inner nozzle
+    const nozzleInner = new THREE.Mesh(
+      new THREE.CylinderGeometry(outletOuter - 0.006, outletOuter - 0.006, 0.14 + 0.002, 12),
+      new THREE.MeshStandardMaterial({ color: 0x050607, roughness: 0.7 })
+    );
+    nozzleInner.position.copy(outlet.position);
+    buretteGroup.add(nozzleInner);
 
     // Stopcock
     const scGroup = new THREE.Group();
