@@ -312,9 +312,15 @@ export default function GlassmorphismBurette() {
         }
       }
       const c = new THREE.Color(liquidColor);
-      if (liquidRef.current) liquidRef.current.material.color.set(c);
-      if (meniscusRef.current) meniscusRef.current.material.color.set(c);
-      if (streamRef.current) streamRef.current.material.color.set(c);
+      if (liquidRef.current && liquidRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+        liquidRef.current.material.color.set(c);
+      }
+      if (meniscusRef.current && meniscusRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+        meniscusRef.current.material.color.set(c);
+      }
+      if (streamRef.current && streamRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+        streamRef.current.material.color.set(c);
+      }
     };
 
     applyLiquid(liquidLevel);
@@ -372,7 +378,6 @@ export default function GlassmorphismBurette() {
 
     const clock = new THREE.Clock();
     const animate = () => {
-      const elapsedTime = clock.getElapsedTime();
       if (autoRotate && !isDragging && cameraRef.current) {
         theta += 0.0025;
         const r = 7.0;
@@ -426,13 +431,13 @@ export default function GlassmorphismBurette() {
   }, []);
 
   useEffect(() => {
-    if (liquidRef.current) {
+    if (liquidRef.current && liquidRef.current.material instanceof THREE.MeshPhysicalMaterial) {
       liquidRef.current.material.color.set(liquidColor);
     }
-    if (meniscusRef.current) {
+    if (meniscusRef.current && meniscusRef.current.material instanceof THREE.MeshPhysicalMaterial) {
       meniscusRef.current.material.color.set(liquidColor);
     }
-    if (streamRef.current) {
+    if (streamRef.current && streamRef.current.material instanceof THREE.MeshPhysicalMaterial) {
       streamRef.current.material.color.set(liquidColor);
     }
   }, [liquidColor]);
