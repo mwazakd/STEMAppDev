@@ -17,7 +17,7 @@ export default function RealisticBuretteClamp() {
   const streamRef = useRef<THREE.Mesh | null>(null);
   const labelGroupRef = useRef<THREE.Group | null>(null);
 
-  const [gripWidth, setGripWidth] = useState(50);
+  const [gripWidth, setGripWidth] = useState(24); // Default to accommodate burette diameter (0.4 units)
   const [autoRotate, setAutoRotate] = useState(true);
   const [liquidLevel, setLiquidLevel] = useState(75);
   const [liquidColor, setLiquidColor] = useState("#1976d2");
