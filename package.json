@@ -1,12 +1,45 @@
 {
   "name": "titration-app",
-  "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "setup-capacitor": "node scripts/setup-capacitor.js",
+    "optimize-models": "node scripts/optimize-models.js",
+    "android": "npm run build && npx cap copy android && npx cap open android",
+    "android-run": "npm run build && npx cap copy android && npx cap run android"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  "dependencies": {
+    "@capacitor/android": "^5.6.0",
+    "@capacitor/cli": "^5.6.0",
+    "@capacitor/core": "^5.6.0",
+    "@types/three": "^0.160.0",
+    "chart.js": "^4.4.0",
+    "idb": "^8.0.0",
+    "lucide-react": "^0.294.0",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^2.15.4",
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8"
+  }
 }
