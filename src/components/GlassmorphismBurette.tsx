@@ -268,7 +268,9 @@ export default function GlassmorphismBurette() {
       labels.add(tick);
 
       if (isMajor) {
-        const number = (i / minorPerMajor) * 10;
+        // Fix grading: numbers should decrease going down (like real burette)
+        // Top is 50, bottom is 0
+        const number = 50 - (i / minorPerMajor) * 10;
         const canvas = document.createElement("canvas");
         canvas.width = 128;
         canvas.height = 64;
