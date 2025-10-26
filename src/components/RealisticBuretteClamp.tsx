@@ -29,7 +29,6 @@ export default function RealisticBuretteClamp() {
   const autoAngleRef = useRef(0);
   const mouseDownRef = useRef(false);
   const lastMouseRef = useRef({ x: 0, y: 0 });
-  const liquidLevelRef = useRef(75); // Track liquid level without React re-renders
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -479,18 +478,15 @@ export default function RealisticBuretteClamp() {
       // Handle dispensing
       if (dispensing && stopcockOpen && liquidRef.current) {
         if (streamRef.current) streamRef.current.visible = true;
-        liquidLevelRef.current = Math.max(0, liquidLevelRef.current - 0.05); // Smooth decrement
-        applyLiquid(liquidLevelRef.current);
-        
-        // Update React state only every 10 frames to reduce re-renders
-        if (Math.floor(Date.now() / 100) % 10 === 0) {
-          setLiquidLevel(liquidLevelRef.current);
-        }
-        
-        if (liquidLevelRef.current <= 0) {
-          setDispensing(false);
-          if (streamRef.current) streamRef.current.visible = false;
-        }
+        setLiquidLevel((prev) => {
+          const next = Math.max(0, +(prev - 0.18).toFixed(2));
+          // Don't call applyLiquid here - let the useEffect handle it
+          if (next <= 0) {
+            setDispensing(false);
+            if (streamRef.current) streamRef.current.visible = false;
+          }
+          return next;
+        });
       } else {
         if (streamRef.current) streamRef.current.visible = false;
       }
@@ -594,6 +590,7 @@ export default function RealisticBuretteClamp() {
 
   // Update arm positions based on grip width (horizontal movement along X axis)
   // Limited by the beam length (2.0 units total, so max 0.85 units from center)
+  // This effect ensures arms maintain their grip width regardless of scene rotation
   useEffect(() => {
     const maxWidth = 0.85; // Maximum distance from center
     const width = (gripWidth / 100) * maxWidth;
@@ -605,26 +602,12 @@ export default function RealisticBuretteClamp() {
     }
   }, [gripWidth]);
 
-  // Liquid color effect
-  useEffect(() => {
-    if (liquidRef.current && liquidRef.current.material instanceof THREE.MeshPhysicalMaterial) {
-      liquidRef.current.material.color.set(liquidColor);
-    }
-    if (meniscusRef.current && meniscusRef.current.material instanceof THREE.MeshPhysicalMaterial) {
-      meniscusRef.current.material.color.set(liquidColor);
-    }
-    if (streamRef.current && streamRef.current.material instanceof THREE.MeshPhysicalMaterial) {
-      streamRef.current.material.color.set(liquidColor);
-    }
-  }, [liquidColor]);
-
-  // Liquid level effect
+  // Liquid level effect - handles both manual slider changes and dispensing
   useEffect(() => {
     const tubeVisibleLength = 3.2;
     const maxLiquidHeight = tubeVisibleLength - 0.06;
     if (liquidRef.current && meniscusRef.current) {
       const pct = Math.max(0, Math.min(100, liquidLevel));
-      liquidLevelRef.current = pct; // Sync ref with state
       const scale = pct / 100;
       liquidRef.current.scale.y = scale;
       const visibleH = maxLiquidHeight * scale;
@@ -632,8 +615,20 @@ export default function RealisticBuretteClamp() {
       liquidRef.current.position.y = bottomY;
       meniscusRef.current.position.y = bottomY + visibleH / 2 + 0.004;
       meniscusRef.current.visible = pct > 0;
+      
+      // Update liquid color for all liquid-related meshes
+      const c = new THREE.Color(liquidColor);
+      if (liquidRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+        liquidRef.current.material.color.set(c);
+      }
+      if (meniscusRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+        meniscusRef.current.material.color.set(c);
+      }
+      if (streamRef.current && streamRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+        streamRef.current.material.color.set(c);
+      }
     }
-  }, [liquidLevel]);
+  }, [liquidLevel, liquidColor]);
 
   // Stopcock rotation effect
   useEffect(() => {
