@@ -82,6 +82,7 @@ export default function TitrationSimulator3D() {
   const mouseDownRef = useRef(false);
   const lastMouseRef = useRef({ x: 0, y: 0 });
   const cameraAngleRef = useRef({ theta: 0, phi: Math.PI / 4 });
+  const cameraDistanceRef = useRef(12);
   const autoRotateRef = useRef(0);
   const glassmorphismBuretteRef = useRef<THREE.Group | null>(null);
   const beakerGroupRef = useRef<THREE.Group | null>(null);
@@ -365,13 +366,15 @@ export default function TitrationSimulator3D() {
       if (sceneRef.current && cameraRef.current && rendererRef.current) {
         if (autoRotate && !mouseDownRef.current) {
           autoRotateRef.current += 0.002;
-          const radius = 12;
           cameraAngleRef.current.theta = autoRotateRef.current;
-          cameraRef.current.position.x = radius * Math.sin(cameraAngleRef.current.phi) * Math.cos(cameraAngleRef.current.theta);
-          cameraRef.current.position.y = radius * Math.cos(cameraAngleRef.current.phi) + 2;
-          cameraRef.current.position.z = radius * Math.sin(cameraAngleRef.current.phi) * Math.sin(cameraAngleRef.current.theta);
-          cameraRef.current.lookAt(0, 2, 0);
         }
+        
+        // Update camera position based on current angles and distance
+        const radius = cameraDistanceRef.current;
+        cameraRef.current.position.x = radius * Math.sin(cameraAngleRef.current.phi) * Math.cos(cameraAngleRef.current.theta);
+        cameraRef.current.position.y = radius * Math.cos(cameraAngleRef.current.phi) + 2;
+        cameraRef.current.position.z = radius * Math.sin(cameraAngleRef.current.phi) * Math.sin(cameraAngleRef.current.theta);
+        cameraRef.current.lookAt(0, 2, 0);
         
         if (glassmorphismBuretteRef.current && isRunning) {
           (glassmorphismBuretteRef.current as THREE.Group).position.y = 6.5 + Math.sin(Date.now() * 0.01) * 0.02;
@@ -403,12 +406,6 @@ export default function TitrationSimulator3D() {
         cameraAngleRef.current.phi -= deltaY * 0.005;
         cameraAngleRef.current.phi = Math.max(0.1, Math.min(Math.PI / 2, cameraAngleRef.current.phi));
         
-        const radius = 12;
-        cameraRef.current.position.x = radius * Math.sin(cameraAngleRef.current.phi) * Math.cos(cameraAngleRef.current.theta);
-        cameraRef.current.position.y = radius * Math.cos(cameraAngleRef.current.phi) + 2;
-        cameraRef.current.position.z = radius * Math.sin(cameraAngleRef.current.phi) * Math.sin(cameraAngleRef.current.theta);
-        cameraRef.current.lookAt(0, 2, 0);
-        
         lastMouseRef.current = { x: e.clientX, y: e.clientY };
       }
     };
@@ -421,9 +418,7 @@ export default function TitrationSimulator3D() {
       e.preventDefault();
       if (cameraRef.current) {
         const delta = e.deltaY * 0.01;
-        const direction = new THREE.Vector3();
-        cameraRef.current.getWorldDirection(direction);
-        cameraRef.current.position.addScaledVector(direction, delta);
+        cameraDistanceRef.current = Math.max(3, Math.min(25, cameraDistanceRef.current + delta));
       }
     };
     
