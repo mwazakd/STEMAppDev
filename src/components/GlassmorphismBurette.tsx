@@ -376,6 +376,7 @@ export default function GlassmorphismBurette() {
     };
     renderer.domElement.addEventListener("click", onClick);
 
+    // Animation loop for auto-rotation and liquid dispensing
     const animate = () => {
       if (autoRotate && !isDragging && cameraRef.current) {
         theta += 0.0025;
