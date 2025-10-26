@@ -252,7 +252,9 @@ export default function GlassmorphismBurette() {
 
     for (let i = 0; i <= totalMinor; i++) {
       const fraction = i / totalMinor;
-      const y = tubeVisibleLength / 2 - fraction * tubeVisibleLength - (tubeVisibleLength / 2);
+      // Fix grading positioning: start from top of tube and go down
+      // tubeVisibleLength/2 is the top, -tubeVisibleLength/2 is the bottom
+      const y = tubeVisibleLength / 2 - fraction * tubeVisibleLength;
       const isMajor = i % minorPerMajor === 0;
       const tickWidth = isMajor ? 0.04 : 0.02;
       const tickHeight = isMajor ? 0.012 : 0.008;
@@ -261,7 +263,7 @@ export default function GlassmorphismBurette() {
         new THREE.BoxGeometry(tickWidth, tickHeight, 0.002),
         new THREE.MeshStandardMaterial({ color: 0xcfe6ff, emissive: 0x061423, roughness: 0.3 })
       );
-      // Position tick closer to glass surface
+      // Position tick on the glass surface
       tick.position.set(outerRadius + 0.015, y, 0);
       labels.add(tick);
 
@@ -283,7 +285,7 @@ export default function GlassmorphismBurette() {
         const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true });
         const sprite = new THREE.Sprite(spriteMat);
         sprite.scale.set(0.36, 0.18, 1);
-        // Position label directly on the glass surface with minimal offset
+        // Position label on the glass surface
         sprite.position.set(outerRadius + 0.01, y, 0.0);
         sprite.center.set(0.0, 0.5); // Anchor left edge to glass
         labels.add(sprite);
