@@ -24,10 +24,10 @@ jobs:
         cache: 'npm'
         
     - name: Install dependencies
-      run: npm ci
+      run: cd titration-app && npm ci
       
     - name: Build project
-      run: npm run build
+      run: cd titration-app && npm run build
       
     - name: Setup Pages
       uses: actions/configure-pages@v4
@@ -35,7 +35,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: ./dist
+        path: ./titration-app/dist
         
     - name: Deploy to GitHub Pages
       id: deployment
