@@ -319,12 +319,72 @@ export default function TitrationSimulator3D() {
     verticalRod.castShadow = true;
     standGroup.add(verticalRod);
     
-    const horizontalArmGeometry = new THREE.CylinderGeometry(0.08, 0.08, 3.5, 16); // Increased length to reach beaker
+    // Horizontal arm (shorter, doesn't go through burette)
+    const horizontalArmGeometry = new THREE.CylinderGeometry(0.08, 0.08, 2.0, 16);
     const horizontalArm = new THREE.Mesh(horizontalArmGeometry, metalMaterial);
-    horizontalArm.position.set(1.4, 6.5, 0); // Adjusted position to reach beaker
+    horizontalArm.position.set(1.0, 6.5, 0); // Shorter arm
     horizontalArm.rotation.z = Math.PI / 2;
     horizontalArm.castShadow = true;
     standGroup.add(horizontalArm);
+    
+    // Burette clamp mechanism
+    const clampGroup = new THREE.Group();
+    clampGroup.position.set(0, 6.5, 0); // Position at burette center
+    
+    // Clamp base (attaches to horizontal arm)
+    const clampBaseGeometry = new THREE.BoxGeometry(0.3, 0.15, 0.15);
+    const clampBase = new THREE.Mesh(clampBaseGeometry, metalMaterial);
+    clampBase.position.set(1.0, 0, 0);
+    clampBase.castShadow = true;
+    clampGroup.add(clampBase);
+    
+    // Clamp jaws (hold the burette)
+    const jawGeometry = new THREE.BoxGeometry(0.1, 0.4, 0.3);
+    const jawMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x666666, 
+      roughness: 0.3, 
+      metalness: 0.8 
+    });
+    
+    // Left jaw
+    const leftJaw = new THREE.Mesh(jawGeometry, jawMaterial);
+    leftJaw.position.set(0.25, 0, 0);
+    leftJaw.castShadow = true;
+    clampGroup.add(leftJaw);
+    
+    // Right jaw
+    const rightJaw = new THREE.Mesh(jawGeometry, jawMaterial);
+    rightJaw.position.set(-0.25, 0, 0);
+    rightJaw.castShadow = true;
+    clampGroup.add(rightJaw);
+    
+    // Clamp screw (adjustment mechanism)
+    const screwGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.2, 16);
+    const screwMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x888888, 
+      roughness: 0.2, 
+      metalness: 0.9 
+    });
+    const screw = new THREE.Mesh(screwGeometry, screwMaterial);
+    screw.position.set(0.4, 0, 0);
+    screw.rotation.z = Math.PI / 2;
+    screw.castShadow = true;
+    clampGroup.add(screw);
+    
+    // Clamp handle (for tightening)
+    const handleGeometry = new THREE.CylinderGeometry(0.03, 0.03, 0.15, 16);
+    const handleMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xaaaaaa, 
+      roughness: 0.1, 
+      metalness: 0.7 
+    });
+    const handle = new THREE.Mesh(handleGeometry, handleMaterial);
+    handle.position.set(0.5, 0, 0);
+    handle.rotation.z = Math.PI / 2;
+    handle.castShadow = true;
+    clampGroup.add(handle);
+    
+    standGroup.add(clampGroup);
     
     scene.add(standGroup);
     
