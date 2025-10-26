@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Grip } from 'lucide-react';
 
@@ -433,7 +433,7 @@ export default function RealisticBuretteClamp() {
     buretteGroup.add(labels);
 
     // Liquid application function
-    const applyLiquid = (pct) => {
+    const applyLiquid = (pct: number) => {
       const clamped = Math.max(0, Math.min(100, pct));
       const scale = clamped / 100;
       if (liquidRef.current) {
@@ -499,13 +499,13 @@ export default function RealisticBuretteClamp() {
     animate();
 
     // Mouse controls for camera orbit
-    const onMouseDown = (e) => {
+    const onMouseDown = (e: MouseEvent) => {
       mouseDownRef.current = true;
       lastMouseRef.current = { x: e.clientX, y: e.clientY };
       setAutoRotate(false);
     };
 
-    const onMouseMove = (e) => {
+    const onMouseMove = (e: MouseEvent) => {
       if (!mouseDownRef.current || !cameraRef.current) return;
       
       const deltaX = e.clientX - lastMouseRef.current.x;
@@ -528,7 +528,7 @@ export default function RealisticBuretteClamp() {
       mouseDownRef.current = false;
     };
 
-    const onWheel = (e) => {
+    const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       if (cameraRef.current) {
         const delta = e.deltaY * 0.01;
@@ -541,7 +541,7 @@ export default function RealisticBuretteClamp() {
     // Click handling for stopcock
     const ray = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
-    const onClick = (ev) => {
+    const onClick = (ev: MouseEvent) => {
       if (!rendererRef.current || !cameraRef.current) return;
       const rect = rendererRef.current.domElement.getBoundingClientRect();
       mouse.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
