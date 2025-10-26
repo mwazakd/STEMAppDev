@@ -84,6 +84,7 @@ export default function TitrationSimulator3D() {
   const cameraAngleRef = useRef({ theta: 0, phi: Math.PI / 4 });
   const cameraDistanceRef = useRef(12);
   const autoRotateRef = useRef(0);
+  const userHasRotatedRef = useRef(false);
   const glassmorphismBuretteRef = useRef<THREE.Group | null>(null);
   const beakerGroupRef = useRef<THREE.Group | null>(null);
   
@@ -364,7 +365,7 @@ export default function TitrationSimulator3D() {
     
     const animate = () => {
       if (sceneRef.current && cameraRef.current && rendererRef.current) {
-        if (autoRotate && !mouseDownRef.current) {
+        if (autoRotate && !mouseDownRef.current && !userHasRotatedRef.current) {
           autoRotateRef.current += 0.002;
           cameraAngleRef.current.theta = autoRotateRef.current;
         }
@@ -405,6 +406,9 @@ export default function TitrationSimulator3D() {
         cameraAngleRef.current.theta -= deltaX * 0.005;
         cameraAngleRef.current.phi -= deltaY * 0.005;
         cameraAngleRef.current.phi = Math.max(0.1, Math.min(Math.PI / 2, cameraAngleRef.current.phi));
+        
+        // Mark that user has manually rotated
+        userHasRotatedRef.current = true;
         
         lastMouseRef.current = { x: e.clientX, y: e.clientY };
       }
@@ -483,6 +487,13 @@ export default function TitrationSimulator3D() {
       setBuretteStopcockOpen(false);
     }
   }, [indicatorColor, solutionVol, titrantAdded, sceneReady]);
+  
+  // Reset manual rotation flag when auto-rotate is turned on
+  useEffect(() => {
+    if (autoRotate) {
+      userHasRotatedRef.current = false;
+    }
+  }, [autoRotate]);
   
   
   useEffect(() => {
