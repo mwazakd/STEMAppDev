@@ -216,7 +216,7 @@ export default function TitrationSimulator3D() {
     const liquidMaterial = new THREE.MeshPhysicalMaterial({
       color: 0x4488ff,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.4, // Reduced from 0.85 to 0.4 for better stream visibility
       roughness: 0.1,
       metalness: 0.1,
       transmission: 0.3,
@@ -236,7 +236,7 @@ export default function TitrationSimulator3D() {
     const surfaceMaterial = new THREE.MeshPhysicalMaterial({
       color: 0x4488ff,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.3, // Reduced from 0.6 to 0.3 for better stream visibility
       roughness: 0.05,
       metalness: 0.3,
       transmission: 0.4,
@@ -319,55 +319,12 @@ export default function TitrationSimulator3D() {
     verticalRod.castShadow = true;
     standGroup.add(verticalRod);
     
-    const horizontalArmGeometry = new THREE.CylinderGeometry(0.08, 0.08, 3.5, 16);
+    const horizontalArmGeometry = new THREE.CylinderGeometry(0.08, 0.08, 3.5, 16); // Increased length to reach beaker
     const horizontalArm = new THREE.Mesh(horizontalArmGeometry, metalMaterial);
-    horizontalArm.position.set(1.4, 6.5, 0);
+    horizontalArm.position.set(1.4, 6.5, 0); // Adjusted position to reach beaker
     horizontalArm.rotation.z = Math.PI / 2;
     horizontalArm.castShadow = true;
     standGroup.add(horizontalArm);
-    
-    // Create a proper laboratory clamp for the burette
-    const clampGroup = new THREE.Group();
-    clampGroup.position.set(0, 6.5, 0); // Position at burette location
-    
-    // Clamp base (attaches to horizontal arm)
-    const clampBaseGeometry = new THREE.BoxGeometry(0.3, 0.2, 0.2);
-    const clampBase = new THREE.Mesh(clampBaseGeometry, metalMaterial);
-    clampBase.position.set(1.4, 0, 0);
-    clampBase.castShadow = true;
-    clampGroup.add(clampBase);
-    
-    // Clamp screw/bolt
-    const clampScrewGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.4, 16);
-    const clampScrew = new THREE.Mesh(clampScrewGeometry, metalMaterial);
-    clampScrew.position.set(1.4, 0, 0);
-    clampScrew.rotation.z = Math.PI / 2;
-    clampScrew.castShadow = true;
-    clampGroup.add(clampScrew);
-    
-    // Clamp jaws (two pieces that hold the burette)
-    const jawGeometry = new THREE.BoxGeometry(0.15, 0.1, 0.3);
-    
-    // Left jaw
-    const leftJaw = new THREE.Mesh(jawGeometry, metalMaterial);
-    leftJaw.position.set(0.2, 0, 0);
-    leftJaw.castShadow = true;
-    clampGroup.add(leftJaw);
-    
-    // Right jaw
-    const rightJaw = new THREE.Mesh(jawGeometry, metalMaterial);
-    rightJaw.position.set(-0.2, 0, 0);
-    rightJaw.castShadow = true;
-    clampGroup.add(rightJaw);
-    
-    // Clamp tightening knob
-    const knobGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.1, 16);
-    const knob = new THREE.Mesh(knobGeometry, metalMaterial);
-    knob.position.set(1.4, 0, 0.3);
-    knob.castShadow = true;
-    clampGroup.add(knob);
-    
-    standGroup.add(clampGroup);
     
     scene.add(standGroup);
     
