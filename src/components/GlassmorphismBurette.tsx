@@ -152,6 +152,7 @@ export default function GlassmorphismBurette() {
     scGroup.position.y = -tubeVisibleLength / 2 - 0.26;
     stopcockRef.current = scGroup;
 
+    // Stopcock body (main cylinder)
     const scBody = new THREE.Mesh(
       new THREE.CylinderGeometry(0.12, 0.12, 0.28, 32),
       new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.25, metalness: 0.8 })
@@ -159,6 +160,7 @@ export default function GlassmorphismBurette() {
     scBody.rotation.z = Math.PI / 2;
     scGroup.add(scBody);
 
+    // Stopcock handle (the rotating part)
     const scHandle = new THREE.Mesh(
       new THREE.BoxGeometry(0.7, 0.08, 0.12),
       new THREE.MeshStandardMaterial({ color: 0x7f7f7f, roughness: 0.25, metalness: 0.9 })
@@ -166,6 +168,7 @@ export default function GlassmorphismBurette() {
     scHandle.position.x = 0;
     scGroup.add(scHandle);
 
+    // Red grip with visual indicator bar
     const scGrip = new THREE.Mesh(
       new THREE.CylinderGeometry(0.06, 0.06, 0.16, 16),
       new THREE.MeshStandardMaterial({ color: 0xd9534f, roughness: 0.4, metalness: 0.1 })
@@ -173,6 +176,15 @@ export default function GlassmorphismBurette() {
     scGrip.rotation.z = Math.PI / 2;
     scGrip.position.x = 0.36;
     scGroup.add(scGrip);
+
+    // Visual indicator bar (normal to the red grip)
+    const indicatorBar = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 0.02, 0.02),
+      new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.2, metalness: 0.8 })
+    );
+    indicatorBar.position.x = 0.36;
+    indicatorBar.position.y = 0.08; // Position it above the grip
+    scGroup.add(indicatorBar);
 
     burette.add(scGroup);
 
@@ -436,7 +448,8 @@ export default function GlassmorphismBurette() {
 
   useEffect(() => {
     if (!stopcockRef.current) return;
-    stopcockRef.current.rotation.z = stopcockOpen ? Math.PI / 2 : 0;
+    // Rotate around X-axis (the axis of the stopcock body)
+    stopcockRef.current.rotation.x = stopcockOpen ? Math.PI / 2 : 0;
   }, [stopcockOpen]);
 
   useEffect(() => {
