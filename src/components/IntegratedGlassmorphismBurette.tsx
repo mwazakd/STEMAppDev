@@ -31,6 +31,8 @@ export default function IntegratedGlassmorphismBurette({
   const labelGroupRef = useRef<THREE.Group | null>(null);
   const buretteGroupRef = useRef<THREE.Group | null>(null);
 
+  const tubeVisibleLength = 6.0;
+
   useEffect(() => {
     if (!scene) return;
 
@@ -39,8 +41,6 @@ export default function IntegratedGlassmorphismBurette({
     buretteGroup.scale.setScalar(scale);
     buretteGroupRef.current = buretteGroup;
     if (groupRef) groupRef.current = buretteGroup;
-
-    const tubeVisibleLength = 6.0;
     const outerRadius = 0.2;
     const glassThickness = 0.035;
     const innerRadius = outerRadius - glassThickness;
@@ -300,6 +300,16 @@ export default function IntegratedGlassmorphismBurette({
     if (meniscusRef.current) meniscusRef.current.material.color.set(c);
     if (streamRef.current) streamRef.current.material.color.set(c);
   }, [liquidColor]);
+
+  // Update stream position when position changes
+  useEffect(() => {
+    if (streamRef.current) {
+      const outletY = -tubeVisibleLength / 2 - 0.24 - 0.7 / 2 - 0.08 - 0.7 / 2 - 0.07; // Calculate outlet Y position
+      streamRef.current.position.x = position.x;
+      streamRef.current.position.y = position.y + outletY - 0.5;
+      streamRef.current.position.z = position.z;
+    }
+  }, [position]);
 
   // Update stream visibility
   useEffect(() => {
