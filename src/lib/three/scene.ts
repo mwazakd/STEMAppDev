@@ -90,7 +90,7 @@ export class TitrationScene {
     
     loader.load(
       '/src/assets/beaker_burette.glb',
-      (gltf) => {
+      (gltf: any) => {
         console.log('GLB model loaded successfully!')
         ;(window as any).glbLoaded = true
         const root = gltf.scene
@@ -116,17 +116,17 @@ export class TitrationScene {
         }
         
         // Enable shadows for all objects
-        root.traverse((child) => {
+        root.traverse((child: any) => {
           if (child instanceof THREE.Mesh) {
             child.castShadow = true
             child.receiveShadow = true
           }
         })
       },
-      (progress) => {
+      (progress: any) => {
         console.log('Loading progress:', (progress.loaded / progress.total * 100) + '%')
       },
-      (error) => {
+      (error: any) => {
         console.warn('GLB model failed to load, using fallback primitives:', error)
         this.createBeaker()
         this.createBurette()
