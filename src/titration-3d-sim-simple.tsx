@@ -55,6 +55,7 @@ export default function TitrationSimulator3D() {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const beakerLiquidRef = useRef<THREE.Mesh | null>(null);
+  const beakerLiquidSurfaceRef = useRef<THREE.Mesh | null>(null);
   const buretteLiquidRef = useRef<THREE.Mesh | null>(null);
   const dropletRef = useRef<THREE.Mesh | null>(null);
   const stirRodRef = useRef<THREE.Mesh | null>(null);
@@ -141,47 +142,163 @@ export default function TitrationSimulator3D() {
     scene.add(bench);
     
     const beakerGroup = new THREE.Group();
-    beakerGroup.position.set(0, 0, 0);
+    beakerGroup.position.set(0, 1.8, 0); // Raise the entire beaker group to sit on table
     (beakerGroupRef as React.MutableRefObject<THREE.Group>).current = beakerGroup;
     
-    const beakerWallGeometry = new THREE.CylinderGeometry(1.2, 1.3, 3.5, 32, 1, true);
-    const beakerMaterial = new THREE.MeshPhysicalMaterial({
+    // GLASSMORPHISM BEAKER - Ultra-realistic glass
+    const wallGeometry = new THREE.CylinderGeometry(1.5, 1.6, 4, 64, 1, true);
+    const glassMaterial = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
       transparent: true,
-      opacity: 0.25,
-      roughness: 0.05,
-      metalness: 0.05,
-      transmission: 0.95,
-      thickness: 0.5,
+      opacity: 0.15,
+      roughness: 0.02,
+      metalness: 0.1,
+      transmission: 0.98,
+      thickness: 0.8,
+      envMapIntensity: 1.5,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.1,
+      ior: 1.52,
+      reflectivity: 0.9,
       side: THREE.DoubleSide
     });
-    const beakerWall = new THREE.Mesh(beakerWallGeometry, beakerMaterial);
+    const beakerWall = new THREE.Mesh(wallGeometry, glassMaterial);
     beakerWall.castShadow = true;
     beakerWall.receiveShadow = true;
     beakerGroup.add(beakerWall);
     
-    const beakerBottomGeometry = new THREE.CylinderGeometry(1.3, 1.3, 0.15, 32);
-    const beakerBottom = new THREE.Mesh(beakerBottomGeometry, beakerMaterial);
-    beakerBottom.position.y = -1.75;
+    // Beaker bottom with glassmorphism
+    const bottomGeometry = new THREE.CylinderGeometry(1.6, 1.6, 0.2, 64);
+    const beakerBottom = new THREE.Mesh(bottomGeometry, glassMaterial.clone());
+    beakerBottom.position.y = -2; // This is relative to the beaker group, so it's fine
+    beakerBottom.castShadow = true;
+    beakerBottom.receiveShadow = true;
     beakerGroup.add(beakerBottom);
     
-    const liquidGeometry = new THREE.CylinderGeometry(1.15, 1.25, 0.1, 32);
-    const liquidMaterial = new THREE.MeshPhongMaterial({
-      color: 0xccccee,
+    // Top rim with slight thickness for realism
+    const rimGeometry = new THREE.TorusGeometry(1.5, 0.08, 16, 64);
+    const rimMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
       transparent: true,
-      opacity: 0.8,
-      shininess: 100
+      opacity: 0.3,
+      roughness: 0.01,
+      metalness: 0.2,
+      transmission: 0.95,
+      thickness: 0.5,
+      clearcoat: 1.0,
+      ior: 1.52
+    });
+    const rim = new THREE.Mesh(rimGeometry, rimMaterial);
+    rim.position.y = 2;
+    rim.rotation.x = Math.PI / 2;
+    beakerGroup.add(rim);
+    
+    // Measurement markings on glass
+    for (let i = 0; i < 5; i++) {
+      const markGeometry = new THREE.TorusGeometry(1.52, 0.01, 8, 32);
+      const markMaterial = new THREE.MeshBasicMaterial({
+        color: 0x88aaff,
+        transparent: true,
+        opacity: 0.4
+      });
+      const mark = new THREE.Mesh(markGeometry, markMaterial);
+      mark.position.y = -1.5 + i * 0.8;
+      mark.rotation.x = Math.PI / 2;
+      beakerGroup.add(mark);
+    }
+    
+    // Liquid with realistic appearance
+    const liquidGeometry = new THREE.CylinderGeometry(1.45, 1.55, 0.1, 64);
+    const liquidMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x4488ff,
+      transparent: true,
+      opacity: 0.85,
+      roughness: 0.1,
+      metalness: 0.1,
+      transmission: 0.3,
+      thickness: 0.5,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.05,
+      ior: 1.33,
+      reflectivity: 0.5
     });
     const liquid = new THREE.Mesh(liquidGeometry, liquidMaterial);
-    liquid.position.y = -1;
+    liquid.position.y = -1; // This is relative to the beaker group, so it's fine
     beakerLiquidRef.current = liquid;
     beakerGroup.add(liquid);
+    
+    // Liquid surface with fresnel effect
+    const surfaceGeometry = new THREE.CircleGeometry(1.45, 64);
+    const surfaceMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x4488ff,
+      transparent: true,
+      opacity: 0.6,
+      roughness: 0.05,
+      metalness: 0.3,
+      transmission: 0.4,
+      clearcoat: 1.0,
+      side: THREE.DoubleSide
+    });
+    const liquidSurface = new THREE.Mesh(surfaceGeometry, surfaceMaterial);
+    liquidSurface.rotation.x = -Math.PI / 2;
+    liquidSurface.position.y = -1;
+    beakerLiquidSurfaceRef.current = liquidSurface;
+    beakerGroup.add(liquidSurface);
+    
+    // Add some bubbles for realism
+    const bubbleGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+    const bubbleMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.3,
+      transmission: 0.95,
+      roughness: 0,
+      metalness: 0,
+      ior: 1.33
+    });
+    
+    for (let i = 0; i < 8; i++) {
+      const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
+      const angle = (i / 8) * Math.PI * 2;
+      const radius = 0.3 + Math.random() * 0.8;
+      bubble.position.x = Math.cos(angle) * radius;
+      bubble.position.z = Math.sin(angle) * radius;
+      bubble.position.y = -1.5 + Math.random() * 0.5;
+      bubble.scale.setScalar(0.5 + Math.random() * 1);
+      beakerGroup.add(bubble);
+    }
+    
+    // Add glowing particles in liquid
+    const particleCount = 30;
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    
+    for (let i = 0; i < particleCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * 1.3;
+      particlePositions[i * 3] = Math.cos(angle) * radius;
+      particlePositions[i * 3 + 1] = -1.5 + Math.random() * 0.8;
+      particlePositions[i * 3 + 2] = Math.sin(angle) * radius;
+    }
+    
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    
+    const particlesMaterial = new THREE.PointsMaterial({
+      color: 0x88ccff,
+      size: 0.03,
+      transparent: true,
+      opacity: 0.6,
+      blending: THREE.AdditiveBlending
+    });
+    
+    const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+    beakerGroup.add(particles);
     
     scene.add(beakerGroup);
     
     const standGroup = new THREE.Group();
     
-    const basePlateGeometry = new THREE.CylinderGeometry(1.8, 1.8, 0.3, 32);
+    const basePlateGeometry = new THREE.CylinderGeometry(3.5, 3.5, 0.3, 32); // Increased diameter from 1.8 to 3.5
     const metalMaterial = new THREE.MeshStandardMaterial({ 
       color: 0x444444,
       roughness: 0.4,
@@ -194,13 +311,13 @@ export default function TitrationSimulator3D() {
     
     const rodGeometry = new THREE.CylinderGeometry(0.1, 0.1, 8, 16);
     const verticalRod = new THREE.Mesh(rodGeometry, metalMaterial);
-    verticalRod.position.set(1.5, 4, 0);
+    verticalRod.position.set(2.8, 4, 0); // Moved further away from beaker (was 1.5, now 2.8)
     verticalRod.castShadow = true;
     standGroup.add(verticalRod);
     
-    const horizontalArmGeometry = new THREE.CylinderGeometry(0.08, 0.08, 2, 16);
+    const horizontalArmGeometry = new THREE.CylinderGeometry(0.08, 0.08, 3.5, 16); // Increased length to reach beaker
     const horizontalArm = new THREE.Mesh(horizontalArmGeometry, metalMaterial);
-    horizontalArm.position.set(0.5, 6.5, 0);
+    horizontalArm.position.set(1.4, 6.5, 0); // Adjusted position to reach beaker
     horizontalArm.rotation.z = Math.PI / 2;
     horizontalArm.castShadow = true;
     standGroup.add(horizontalArm);
@@ -212,7 +329,7 @@ export default function TitrationSimulator3D() {
     (buretteGroupRef as React.MutableRefObject<THREE.Group>).current = buretteGroup;
     
     const buretteTubeGeometry = new THREE.CylinderGeometry(0.18, 0.18, 5, 32, 1, true);
-    const glassMaterial = new THREE.MeshPhysicalMaterial({
+    const buretteGlassMaterial = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
       transparent: true,
       opacity: 0.3,
@@ -221,7 +338,7 @@ export default function TitrationSimulator3D() {
       transmission: 0.9,
       thickness: 0.3
     });
-    const buretteTube = new THREE.Mesh(buretteTubeGeometry, glassMaterial);
+    const buretteTube = new THREE.Mesh(buretteTubeGeometry, buretteGlassMaterial);
     buretteTube.castShadow = true;
     buretteGroup.add(buretteTube);
     
@@ -237,7 +354,7 @@ export default function TitrationSimulator3D() {
     buretteGroup.add(buretteLiquid);
     
     const tipGeometry = new THREE.CylinderGeometry(0.04, 0.08, 0.5, 16);
-    const tip = new THREE.Mesh(tipGeometry, glassMaterial);
+    const tip = new THREE.Mesh(tipGeometry, buretteGlassMaterial);
     tip.position.y = -2.75;
     buretteGroup.add(tip);
     
@@ -384,13 +501,23 @@ export default function TitrationSimulator3D() {
   useEffect(() => {
     if (beakerLiquidRef.current && sceneReady) {
       if (beakerLiquidRef.current) {
-        (beakerLiquidRef.current.material as THREE.MeshPhongMaterial).color = indicatorColor;
+        (beakerLiquidRef.current.material as THREE.MeshPhysicalMaterial).color = indicatorColor;
+      }
+      
+      // Update liquid surface color too
+      if (beakerLiquidSurfaceRef.current) {
+        (beakerLiquidSurfaceRef.current.material as THREE.MeshPhysicalMaterial).color = indicatorColor;
       }
       
       const maxHeight = 3.2;
       const liquidHeight = ((solutionVol + titrantAdded) / 100) * maxHeight;
       beakerLiquidRef.current.scale.y = liquidHeight * 10;
-      beakerLiquidRef.current.position.y = -1.7 + (liquidHeight / 2);
+      beakerLiquidRef.current.position.y = -1.7 + (liquidHeight / 2); // This is relative to beaker group
+      
+      // Update surface position
+      if (beakerLiquidSurfaceRef.current) {
+        beakerLiquidSurfaceRef.current.position.y = beakerLiquidRef.current.position.y + (liquidHeight * 0.5);
+      }
     }
     
     if (buretteLiquidRef.current && sceneReady) {
