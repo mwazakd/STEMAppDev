@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Play, Pause, RotateCcw, Info, Beaker } from 'lucide-react';
 import * as THREE from 'three';
 import IntegratedGlassmorphismBurette from './components/IntegratedGlassmorphismBurette';
+import IntegratedGlassmorphismConicalFlask from './components/IntegratedGlassmorphismConicalFlask';
 
 const calculatePH = (concentration: number, volume: number, type: string, titrantConc: number, titrantVol: number, titrantType: string) => {
   const totalVol = volume + titrantVol;
@@ -55,8 +56,6 @@ export default function TitrationSimulator3D() {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const beakerLiquidRef = useRef<THREE.Mesh | null>(null);
-  const beakerLiquidSurfaceRef = useRef<THREE.Mesh | null>(null);
   const dropletRef = useRef<THREE.Mesh | null>(null);
   const stirRodRef = useRef<THREE.Mesh | null>(null);
   const animationIdRef = useRef<number | null>(null);
@@ -88,7 +87,7 @@ export default function TitrationSimulator3D() {
   const autoRotateRef = useRef(0);
   const userHasRotatedRef = useRef(false);
   const glassmorphismBuretteRef = useRef<THREE.Group | null>(null);
-  const beakerGroupRef = useRef<THREE.Group | null>(null);
+  const conicalFlaskRef = useRef<THREE.Group | null>(null);
   
   const currentPH = useMemo(() => {
     return calculatePH(solutionConc, solutionVol, solutionType, titrantConc, titrantAdded, titrantType);
@@ -147,160 +146,7 @@ export default function TitrationSimulator3D() {
     bench.receiveShadow = true;
     scene.add(bench);
     
-    const beakerGroup = new THREE.Group();
-    beakerGroup.position.set(0, 1.8, 0); // Raise the entire beaker group to sit on table
-    (beakerGroupRef as React.MutableRefObject<THREE.Group>).current = beakerGroup;
-    
-    // GLASSMORPHISM BEAKER - Ultra-realistic glass
-    const wallGeometry = new THREE.CylinderGeometry(1.5, 1.6, 4, 64, 1, true);
-    const glassMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.15,
-      roughness: 0.02,
-      metalness: 0.1,
-      transmission: 0.98,
-      thickness: 0.8,
-      envMapIntensity: 1.5,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.1,
-      ior: 1.52,
-      reflectivity: 0.9,
-      side: THREE.DoubleSide
-    });
-    const beakerWall = new THREE.Mesh(wallGeometry, glassMaterial);
-    beakerWall.castShadow = true;
-    beakerWall.receiveShadow = true;
-    beakerGroup.add(beakerWall);
-    
-    // Beaker bottom with glassmorphism
-    const bottomGeometry = new THREE.CylinderGeometry(1.6, 1.6, 0.2, 64);
-    const beakerBottom = new THREE.Mesh(bottomGeometry, glassMaterial.clone());
-    beakerBottom.position.y = -2; // This is relative to the beaker group, so it's fine
-    beakerBottom.castShadow = true;
-    beakerBottom.receiveShadow = true;
-    beakerGroup.add(beakerBottom);
-    
-    // Top rim with slight thickness for realism
-    const rimGeometry = new THREE.TorusGeometry(1.5, 0.08, 16, 64);
-    const rimMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.3,
-      roughness: 0.01,
-      metalness: 0.2,
-      transmission: 0.95,
-      thickness: 0.5,
-      clearcoat: 1.0,
-      ior: 1.52
-    });
-    const rim = new THREE.Mesh(rimGeometry, rimMaterial);
-    rim.position.y = 2;
-    rim.rotation.x = Math.PI / 2;
-    beakerGroup.add(rim);
-    
-    // Measurement markings on glass
-    for (let i = 0; i < 5; i++) {
-      const markGeometry = new THREE.TorusGeometry(1.52, 0.01, 8, 32);
-      const markMaterial = new THREE.MeshBasicMaterial({
-        color: 0x88aaff,
-        transparent: true,
-        opacity: 0.4
-      });
-      const mark = new THREE.Mesh(markGeometry, markMaterial);
-      mark.position.y = -1.5 + i * 0.8;
-      mark.rotation.x = Math.PI / 2;
-      beakerGroup.add(mark);
-    }
-    
-    // Liquid with realistic appearance
-    const liquidGeometry = new THREE.CylinderGeometry(1.45, 1.55, 0.1, 64);
-    const liquidMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x4488ff,
-      transparent: true,
-      opacity: 0.85,
-      roughness: 0.1,
-      metalness: 0.1,
-      transmission: 0.3,
-      thickness: 0.5,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.05,
-      ior: 1.33,
-      reflectivity: 0.5
-    });
-    const liquid = new THREE.Mesh(liquidGeometry, liquidMaterial);
-    liquid.position.y = -1; // This is relative to the beaker group, so it's fine
-    beakerLiquidRef.current = liquid;
-    beakerGroup.add(liquid);
-    
-    // Liquid surface with fresnel effect
-    const surfaceGeometry = new THREE.CircleGeometry(1.45, 64);
-    const surfaceMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x4488ff,
-      transparent: true,
-      opacity: 0.6,
-      roughness: 0.05,
-      metalness: 0.3,
-      transmission: 0.4,
-      clearcoat: 1.0,
-      side: THREE.DoubleSide
-    });
-    const liquidSurface = new THREE.Mesh(surfaceGeometry, surfaceMaterial);
-    liquidSurface.rotation.x = -Math.PI / 2;
-    liquidSurface.position.y = -1;
-    beakerLiquidSurfaceRef.current = liquidSurface;
-    beakerGroup.add(liquidSurface);
-    
-    // Add some bubbles for realism
-    const bubbleGeometry = new THREE.SphereGeometry(0.05, 16, 16);
-    const bubbleMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.3,
-      transmission: 0.95,
-      roughness: 0,
-      metalness: 0,
-      ior: 1.33
-    });
-    
-    for (let i = 0; i < 8; i++) {
-      const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
-      const angle = (i / 8) * Math.PI * 2;
-      const radius = 0.3 + Math.random() * 0.8;
-      bubble.position.x = Math.cos(angle) * radius;
-      bubble.position.z = Math.sin(angle) * radius;
-      bubble.position.y = -1.5 + Math.random() * 0.5;
-      bubble.scale.setScalar(0.5 + Math.random() * 1);
-      beakerGroup.add(bubble);
-    }
-    
-    // Add glowing particles in liquid
-    const particleCount = 30;
-    const particlesGeometry = new THREE.BufferGeometry();
-    const particlePositions = new Float32Array(particleCount * 3);
-    
-    for (let i = 0; i < particleCount; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const radius = Math.random() * 1.3;
-      particlePositions[i * 3] = Math.cos(angle) * radius;
-      particlePositions[i * 3 + 1] = -1.5 + Math.random() * 0.8;
-      particlePositions[i * 3 + 2] = Math.sin(angle) * radius;
-    }
-    
-    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-    
-    const particlesMaterial = new THREE.PointsMaterial({
-      color: 0x88ccff,
-      size: 0.03,
-      transparent: true,
-      opacity: 0.6,
-      blending: THREE.AdditiveBlending
-    });
-    
-    const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-    beakerGroup.add(particles);
-    
-    scene.add(beakerGroup);
+    // Conical flask will be added by the IntegratedGlassmorphismConicalFlask component
     
     const standGroup = new THREE.Group();
     
@@ -384,9 +230,9 @@ export default function TitrationSimulator3D() {
           (glassmorphismBuretteRef.current as THREE.Group).position.y = 6.5;
         }
         
-        if (beakerGroupRef.current && isStirring) {
+        if (conicalFlaskRef.current && isStirring) {
           const wobble = Math.sin(Date.now() * 0.003) * 0.01;
-          (beakerGroupRef.current as THREE.Group).rotation.z = wobble;
+          (conicalFlaskRef.current as THREE.Group).rotation.z = wobble;
         }
         
         rendererRef.current.render(sceneRef.current, cameraRef.current);
@@ -458,26 +304,8 @@ export default function TitrationSimulator3D() {
   }, []);
   
   useEffect(() => {
-    if (beakerLiquidRef.current && sceneReady) {
-      if (beakerLiquidRef.current) {
-        (beakerLiquidRef.current.material as THREE.MeshPhysicalMaterial).color = indicatorColor;
-      }
-      
-      // Update liquid surface color too
-      if (beakerLiquidSurfaceRef.current) {
-        (beakerLiquidSurfaceRef.current.material as THREE.MeshPhysicalMaterial).color = indicatorColor;
-      }
-      
-      const maxHeight = 3.2;
-      const liquidHeight = ((solutionVol + titrantAdded) / 100) * maxHeight;
-      beakerLiquidRef.current.scale.y = liquidHeight * 10;
-      beakerLiquidRef.current.position.y = -1.7 + (liquidHeight / 2); // This is relative to beaker group
-      
-      // Update surface position
-      if (beakerLiquidSurfaceRef.current) {
-        beakerLiquidSurfaceRef.current.position.y = beakerLiquidRef.current.position.y + (liquidHeight * 0.5);
-      }
-    }
+    // Conical flask liquid level will be handled by the IntegratedGlassmorphismConicalFlask component
+    // No need for separate liquid level management here
   }, [indicatorColor, solutionVol, titrantAdded, sceneReady]);
 
   // Remove separate useEffect for burette liquid level updates - now handled directly in titration interval
@@ -641,11 +469,22 @@ export default function TitrationSimulator3D() {
           gripWidth={buretteGripWidth}
         />
       )}
+      {/* Glassmorphism Conical Flask Component */}
+      {sceneRef.current && (
+        <IntegratedGlassmorphismConicalFlask
+            position={new THREE.Vector3(0, 2.5, 0)}
+          scale={1}
+          liquidLevel={((5 + titrantAdded) / 50) * 100}
+          liquidColor={`#${indicatorColor.getHexString()}`}
+          scene={sceneRef.current}
+          groupRef={conicalFlaskRef}
+        />
+      )}
       <div className="bg-black bg-opacity-40 backdrop-blur-md p-4 border-b border-cyan-500 border-opacity-30 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Beaker className="w-8 h-8 text-cyan-400" />
-            <h1 className="text-3xl font-bold text-white">3D Titration Simulator</h1>
+            <h1 className="text-3xl font-bold text-white">3D Titration Simulator - Conical Flask</h1>
           </div>
           <button
             onClick={() => setShowTutorial(!showTutorial)}
