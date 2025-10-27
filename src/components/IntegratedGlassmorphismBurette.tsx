@@ -279,7 +279,7 @@ export default function IntegratedGlassmorphismBurette({
 
     // Start animation loop to update liquid level from ref
     const animate = () => {
-      if (liquidLevelRef && liquidLevelRef.current !== undefined) {
+      if (liquidLevelRef && liquidLevelRef.current !== null && liquidLevelRef.current !== undefined) {
         updateLiquidLevelDirect(liquidLevelRef.current);
       }
       animationIdRef.current = requestAnimationFrame(animate);

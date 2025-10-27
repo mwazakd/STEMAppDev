@@ -74,7 +74,6 @@ export default function TitrationSimulator3D() {
   const [sceneReady, setSceneReady] = useState(false);
   const [autoRotate, setAutoRotate] = useState(true);
   const [buretteStopcockOpen, setBuretteStopcockOpen] = useState(false);
-  const [buretteLiquidLevel, setBuretteLiquidLevel] = useState(100);
   const [buretteGripWidth, setBuretteGripWidth] = useState(25); // Default to burette diameter grip
   
   // Ref to track liquid level without causing React re-renders
