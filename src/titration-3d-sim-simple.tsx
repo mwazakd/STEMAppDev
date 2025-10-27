@@ -506,7 +506,7 @@ export default function TitrationSimulator3D() {
         const delta = (now - lastUpdateRef.current) / 1000;
         lastUpdateRef.current = now;
         
-        const flowRate = 0.8; // Reduced flow rate for smoother liquid level changes
+        const flowRate = 1.2; // Increased flow rate as requested
         const increment = flowRate * delta;
         
         setTitrantAdded(prev => {

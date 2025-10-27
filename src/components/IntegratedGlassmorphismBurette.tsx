@@ -245,7 +245,7 @@ export default function IntegratedGlassmorphismBurette({
       labels.add(tick);
 
       if (isMajor) {
-        const number = 50 - (i / minorPerMajor) * 10;
+        const number = (i / minorPerMajor) * 10;
         const canvas = document.createElement("canvas");
         canvas.width = 128;
         canvas.height = 64;
