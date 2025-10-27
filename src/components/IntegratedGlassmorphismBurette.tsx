@@ -56,6 +56,7 @@ export default function IntegratedGlassmorphismBurette({
 
     const buretteGroup = new THREE.Group();
     buretteGroup.position.copy(position);
+    buretteGroup.position.y += 2; // Raise burette by 2 units above clamp position
     buretteGroup.scale.setScalar(scale);
     buretteGroupRef.current = buretteGroup;
     if (groupRef) {

@@ -83,7 +83,7 @@ export default function TitrationSimulator3D() {
   const mouseDownRef = useRef(false);
   const lastMouseRef = useRef({ x: 0, y: 0 });
   const cameraAngleRef = useRef({ theta: 0, phi: Math.PI / 4 });
-  const cameraDistanceRef = useRef(12);
+  const cameraDistanceRef = useRef(18); // Increased initial distance for larger world
   const autoRotateRef = useRef(0);
   const userHasRotatedRef = useRef(false);
   const glassmorphismBuretteRef = useRef<THREE.Group | null>(null);
@@ -161,18 +161,19 @@ export default function TitrationSimulator3D() {
     basePlate.castShadow = true;
     standGroup.add(basePlate);
     
-    const rodGeometry = new THREE.CylinderGeometry(0.1, 0.1, 8, 16);
+    const rodGeometry = new THREE.CylinderGeometry(0.1, 0.1, 10, 16); // Increased length upwards
     const verticalRod = new THREE.Mesh(rodGeometry, metalMaterial);
     // Position rod to just touch the mounting bracket base at (0, 4.1, -2) after rotation
     // After rotation: (x, y, z) becomes (-z, y, x)
     // So to get (0, 4.1, -2), we need (-(-2), 4.1, 0) = (2, 4.1, 0)
-    verticalRod.position.set(2, 4.1, 0);
+    verticalRod.position.set(2, 5.1, 0); // Adjusted center position for new height
     verticalRod.castShadow = true;
     standGroup.add(verticalRod);
     
     // Rotate the entire stand group counterclockwise (anticlockwise) when viewed from above
     // This aligns the vertical rod with the mounting bracket of the clamp
     standGroup.rotation.y = Math.PI / 2; // 90 degrees counterclockwise
+    standGroup.scale.set(1.2, 1.2, 1.2); // Increased scale for larger world
     
     scene.add(standGroup);
     
@@ -205,7 +206,7 @@ export default function TitrationSimulator3D() {
     stirRodRef.current = stirRod;
     scene.add(stirRod);
     
-    const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+    const gridHelper = new THREE.GridHelper(40, 40, 0x444444, 0x222222); // Increased grid size for larger world
     gridHelper.position.y = -0.4;
     scene.add(gridHelper);
     
@@ -227,7 +228,7 @@ export default function TitrationSimulator3D() {
         
         if (glassmorphismBuretteRef.current) {
           // Remove wobble effect to prevent interference with liquid level
-          (glassmorphismBuretteRef.current as THREE.Group).position.y = 6.5;
+          (glassmorphismBuretteRef.current as THREE.Group).position.y = 10.5; // Lowered burette position
         }
         
         if (conicalFlaskRef.current && isStirring) {
@@ -271,7 +272,7 @@ export default function TitrationSimulator3D() {
       e.preventDefault();
       if (cameraRef.current) {
         const delta = e.deltaY * 0.01;
-        cameraDistanceRef.current = Math.max(3, Math.min(25, cameraDistanceRef.current + delta));
+        cameraDistanceRef.current = Math.max(5, Math.min(40, cameraDistanceRef.current + delta)); // Increased zoom range for larger world
       }
     };
     
@@ -458,8 +459,8 @@ export default function TitrationSimulator3D() {
       {/* Glassmorphism Burette Component */}
       {sceneRef.current && (
         <IntegratedGlassmorphismBurette
-          position={new THREE.Vector3(0, 6.5, 0)}
-          scale={1}
+          position={new THREE.Vector3(0, 8.5, 0)} // Raised with the rod
+          scale={1.2} // Increased scale for larger world
           liquidLevelRef={buretteLiquidLevelRef}
           liquidColor="#4488ff"
           stopcockOpen={buretteStopcockOpen}
@@ -472,8 +473,8 @@ export default function TitrationSimulator3D() {
       {/* Glassmorphism Conical Flask Component */}
       {sceneRef.current && (
         <IntegratedGlassmorphismConicalFlask
-            position={new THREE.Vector3(0, 2.5, 0)}
-          scale={1}
+            position={new THREE.Vector3(0, 2.5, 0)} // Raised to 2.5
+          scale={1.2} // Increased scale for larger world
           liquidLevel={((5 + titrantAdded) / 50) * 100}
           liquidColor={`#${indicatorColor.getHexString()}`}
           scene={sceneRef.current}
