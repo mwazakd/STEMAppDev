@@ -77,6 +77,9 @@ export default function TitrationSimulator3D() {
   const [buretteLiquidLevel, setBuretteLiquidLevel] = useState(100);
   const [buretteGripWidth, setBuretteGripWidth] = useState(25); // Default to burette diameter grip
   
+  // Ref to track liquid level without causing React re-renders
+  const buretteLiquidLevelRef = useRef(100);
+  
   const lastUpdateRef = useRef(Date.now());
   const stirAngleRef = useRef(0);
   const mouseDownRef = useRef(false);
@@ -377,8 +380,9 @@ export default function TitrationSimulator3D() {
         cameraRef.current.position.z = radius * Math.sin(cameraAngleRef.current.phi) * Math.sin(cameraAngleRef.current.theta);
         cameraRef.current.lookAt(0, 2, 0);
         
-        if (glassmorphismBuretteRef.current && isRunning) {
-          (glassmorphismBuretteRef.current as THREE.Group).position.y = 6.5 + Math.sin(Date.now() * 0.01) * 0.02;
+        if (glassmorphismBuretteRef.current) {
+          // Remove wobble effect to prevent interference with liquid level
+          (glassmorphismBuretteRef.current as THREE.Group).position.y = 6.5;
         }
         
         if (beakerGroupRef.current && isStirring) {
@@ -475,18 +479,18 @@ export default function TitrationSimulator3D() {
         beakerLiquidSurfaceRef.current.position.y = beakerLiquidRef.current.position.y + (liquidHeight * 0.5);
       }
     }
-    
-    // Update glassmorphism burette liquid level based on titrant added
-    const remainingTitrant = 100 - titrantAdded;
-    setBuretteLiquidLevel(Math.max(0, remainingTitrant));
-    
-    // Auto-open stopcock when titration is running
+  }, [indicatorColor, solutionVol, titrantAdded, sceneReady]);
+
+  // Remove separate useEffect for burette liquid level updates - now handled directly in titration interval
+
+  // Separate useEffect for stopcock control
+  useEffect(() => {
     if (isRunning && !buretteStopcockOpen) {
       setBuretteStopcockOpen(true);
     } else if (!isRunning && buretteStopcockOpen) {
       setBuretteStopcockOpen(false);
     }
-  }, [indicatorColor, solutionVol, titrantAdded, sceneReady]);
+  }, [isRunning, buretteStopcockOpen]);
   
   // Reset manual rotation flag when auto-rotate is turned on
   useEffect(() => {
@@ -503,15 +507,20 @@ export default function TitrationSimulator3D() {
         const delta = (now - lastUpdateRef.current) / 1000;
         lastUpdateRef.current = now;
         
-        const flowRate = 1.2; // Increased flow rate for continuous stream
+        const flowRate = 0.8; // Reduced flow rate for smoother liquid level changes
         const increment = flowRate * delta;
         
         setTitrantAdded(prev => {
           const newVol = Math.min(prev + increment, 100);
           if (newVol >= 100) setIsRunning(false);
+          
+          // Update burette liquid level ref directly for smooth animation
+          const remainingTitrant = 100 - newVol;
+          buretteLiquidLevelRef.current = Math.max(0, remainingTitrant);
+          
           return newVol;
         });
-      }, 50);
+      }, 100); // Increased interval for smoother updates
       
       return () => clearInterval(interval);
     }
@@ -608,6 +617,8 @@ export default function TitrationSimulator3D() {
     setIsRunning(false);
     setTitrantAdded(0);
     setData([]);
+    // Reset burette liquid level ref
+    buretteLiquidLevelRef.current = 100;
   };
   
   return (
@@ -617,11 +628,10 @@ export default function TitrationSimulator3D() {
         <IntegratedGlassmorphismBurette
           position={new THREE.Vector3(0, 6.5, 0)}
           scale={1}
-          liquidLevel={buretteLiquidLevel}
+          liquidLevelRef={buretteLiquidLevelRef}
           liquidColor="#4488ff"
           stopcockOpen={buretteStopcockOpen}
           onStopcockToggle={() => setBuretteStopcockOpen(!buretteStopcockOpen)}
-          onLiquidLevelChange={setBuretteLiquidLevel}
           scene={sceneRef.current}
           groupRef={glassmorphismBuretteRef}
           gripWidth={buretteGripWidth}

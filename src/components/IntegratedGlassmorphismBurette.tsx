@@ -5,11 +5,10 @@ import BuretteClamp from "./BuretteClamp";
 interface IntegratedGlassmorphismBuretteProps {
   position?: THREE.Vector3;
   scale?: number;
-  liquidLevel?: number;
+  liquidLevelRef?: React.RefObject<number>;
   liquidColor?: string;
   stopcockOpen?: boolean;
   onStopcockToggle?: () => void;
-  onLiquidLevelChange?: (level: number) => void;
   scene: THREE.Scene;
   groupRef?: React.RefObject<THREE.Group>;
   gripWidth?: number; // Add grip width control
@@ -18,7 +17,7 @@ interface IntegratedGlassmorphismBuretteProps {
 export default function IntegratedGlassmorphismBurette({
   position = new THREE.Vector3(0, 6.5, 0),
   scale = 1,
-  liquidLevel = 75,
+  liquidLevelRef,
   liquidColor = "#1976d2",
   stopcockOpen = false,
   onStopcockToggle,
@@ -33,6 +32,24 @@ export default function IntegratedGlassmorphismBurette({
   const labelGroupRef = useRef<THREE.Group | null>(null);
   const buretteGroupRef = useRef<THREE.Group | null>(null);
   const clampGroupRef = useRef<THREE.Group | null>(null);
+  const animationIdRef = useRef<number | null>(null);
+
+  // Function to update liquid level directly
+  const updateLiquidLevelDirect = (level: number) => {
+    if (!liquidRef.current || !meniscusRef.current) return;
+    
+    const tubeVisibleLength = 6.0;
+    const maxLiquidHeight = tubeVisibleLength - 0.06;
+    const pct = Math.max(0, Math.min(100, level));
+    const scale = pct / 100;
+    
+    liquidRef.current.scale.y = scale;
+    const visibleH = maxLiquidHeight * scale;
+    const bottomY = -tubeVisibleLength / 2 + visibleH / 2;
+    liquidRef.current.position.y = bottomY;
+    meniscusRef.current.position.y = bottomY + visibleH / 2 + 0.004;
+    meniscusRef.current.visible = pct > 0;
+  };
 
   useEffect(() => {
     if (!scene) return;
@@ -260,28 +277,25 @@ export default function IntegratedGlassmorphismBurette({
       scGroup.userData = { clickable: true };
     }
 
+    // Start animation loop to update liquid level from ref
+    const animate = () => {
+      if (liquidLevelRef && liquidLevelRef.current !== undefined) {
+        updateLiquidLevelDirect(liquidLevelRef.current);
+      }
+      animationIdRef.current = requestAnimationFrame(animate);
+    };
+    animate();
+
     return () => {
       scene.remove(buretteGroup);
+      if (animationIdRef.current) {
+        cancelAnimationFrame(animationIdRef.current);
+      }
       // Stream is part of buretteGroup, so it will be removed automatically
     };
-  }, [scene, position, scale, onStopcockToggle]);
+  }, [scene, position, scale, onStopcockToggle, liquidLevelRef]);
 
-  // Update liquid level
-  useEffect(() => {
-    if (!liquidRef.current || !meniscusRef.current) return;
-    
-    const tubeVisibleLength = 6.0;
-    const maxLiquidHeight = tubeVisibleLength - 0.06;
-    const pct = Math.max(0, Math.min(100, liquidLevel));
-    const scale = pct / 100;
-    
-    liquidRef.current.scale.y = scale;
-    const visibleH = maxLiquidHeight * scale;
-    const bottomY = -tubeVisibleLength / 2 + visibleH / 2;
-    liquidRef.current.position.y = bottomY;
-    meniscusRef.current.position.y = bottomY + visibleH / 2 + 0.004;
-    meniscusRef.current.visible = pct > 0;
-  }, [liquidLevel]);
+  // Remove old liquid level useEffect - now handled by animation loop
 
   // Update stopcock rotation
   useEffect(() => {
@@ -305,10 +319,10 @@ export default function IntegratedGlassmorphismBurette({
 
   // Update stream visibility
   useEffect(() => {
-    if (streamRef.current) {
-      streamRef.current.visible = stopcockOpen && liquidLevel > 0;
+    if (streamRef.current && liquidLevelRef) {
+      streamRef.current.visible = stopcockOpen && (liquidLevelRef.current || 0) > 0;
     }
-  }, [stopcockOpen, liquidLevel]);
+  }, [stopcockOpen, liquidLevelRef]);
 
   return (
     <>
