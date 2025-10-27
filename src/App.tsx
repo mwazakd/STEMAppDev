@@ -3,7 +3,6 @@ import TitrationSimulator3D from './titration-3d-sim-simple'
 import GlassmorphismBeaker from './components/GlassmorphismBeaker'
 import GlassmorphismBurette from './components/GlassmorphismBurette'
 import TestGlassmorphism from './components/TestGlassmorphism'
-import RealisticBuretteClamp from './components/RealisticBuretteClamp'
 
 function App() {
   const [useAdvanced3D, setUseAdvanced3D] = useState(true) // Default to advanced 3D
