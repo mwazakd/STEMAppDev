@@ -514,8 +514,13 @@ export default function TitrationSimulator3D() {
           if (newVol >= 100) setIsRunning(false);
           
           // Update burette liquid level ref directly for smooth animation
-          const remainingTitrant = 100 - newVol;
-          buretteLiquidLevelRef.current = Math.max(0, remainingTitrant);
+          // Since markings go from 0 (top) to 50 (bottom), and liquid starts at 0 mark (full)
+          // As we add titrant, liquid level drops to show volume added
+          // If we've added 25mL, liquid should be at 25mL mark (50% down from top)
+          // So liquid level should be 100% - (volumeAdded/50) * 100%
+          const volumeAdded = newVol; // This represents mL added
+          const liquidLevelPercentage = 100 - (volumeAdded / 50) * 100; // Start at 100%, subtract based on volume added
+          buretteLiquidLevelRef.current = Math.max(0, liquidLevelPercentage);
           
           return newVol;
         });
@@ -616,7 +621,7 @@ export default function TitrationSimulator3D() {
     setIsRunning(false);
     setTitrantAdded(0);
     setData([]);
-    // Reset burette liquid level ref
+    // Reset burette liquid level ref to start at 0 mark (full)
     buretteLiquidLevelRef.current = 100;
   };
   
