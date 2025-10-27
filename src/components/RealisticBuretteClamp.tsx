@@ -24,6 +24,11 @@ export default function RealisticBuretteClamp() {
   const [stopcockOpen, setStopcockOpen] = useState(false);
   const [dispensing, setDispensing] = useState(false);
 
+  // Refs for smooth dispensing without React state conflicts
+  const currentLiquidLevelRef = useRef(75);
+  const targetLiquidLevelRef = useRef(75);
+  const dispensingSpeedRef = useRef(20.0); // units per second
+
   const thetaRef = useRef(0);
   const phiRef = useRef(Math.PI / 3);
   const autoAngleRef = useRef(0);
@@ -432,10 +437,11 @@ export default function RealisticBuretteClamp() {
 
     buretteGroup.add(labels);
 
-    // Liquid application function
-    const applyLiquid = (pct: number) => {
-      const clamped = Math.max(0, Math.min(100, pct));
+    // Direct liquid level update function - bypasses React state for smooth animation
+    const updateLiquidLevelDirect = (level: number) => {
+      const clamped = Math.max(0, Math.min(100, level));
       const scale = clamped / 100;
+      
       if (liquidRef.current) {
         liquidRef.current.scale.y = scale;
         const full = maxLiquidHeight;
@@ -448,6 +454,8 @@ export default function RealisticBuretteClamp() {
           meniscusRef.current.visible = clamped > 0;
         }
       }
+      
+      // Update colors
       const c = new THREE.Color(liquidColor);
       if (liquidRef.current && liquidRef.current.material instanceof THREE.MeshPhysicalMaterial) {
         liquidRef.current.material.color.set(c);
@@ -460,10 +468,13 @@ export default function RealisticBuretteClamp() {
       }
     };
 
-    applyLiquid(liquidLevel);
+    updateLiquidLevelDirect(liquidLevel);
 
-    // Animation loop
+    // Animation loop with interpolation-based smooth dispensing
+    const clock = new THREE.Clock();
     const animate = () => {
+      const deltaTime = clock.getDelta();
+      
       if (autoRotate && !mouseDownRef.current && cameraRef.current) {
         autoAngleRef.current += 0.003;
         const radius = 7;
@@ -475,18 +486,22 @@ export default function RealisticBuretteClamp() {
         cameraRef.current.lookAt(0, 0, 0);
       }
 
-      // Handle dispensing
-      if (dispensing && stopcockOpen && liquidRef.current) {
+      // Handle smooth dispensing using interpolation - NO React state updates during animation
+      if (dispensing && stopcockOpen) {
         if (streamRef.current) streamRef.current.visible = true;
-        setLiquidLevel((prev) => {
-          const next = Math.max(0, +(prev - 0.18).toFixed(2));
-          // Don't call applyLiquid here - let the useEffect handle it
-          if (next <= 0) {
-            setDispensing(false);
-            if (streamRef.current) streamRef.current.visible = false;
-          }
-          return next;
-        });
+        
+        // Update current level directly without React state
+        const levelDecrease = dispensingSpeedRef.current * deltaTime;
+        currentLiquidLevelRef.current = Math.max(0, currentLiquidLevelRef.current - levelDecrease);
+        
+        // Update the visual liquid level directly
+        updateLiquidLevelDirect(currentLiquidLevelRef.current);
+        
+        // Stop dispensing when empty
+        if (currentLiquidLevelRef.current <= 0) {
+          setDispensing(false);
+          if (streamRef.current) streamRef.current.visible = false;
+        }
       } else {
         if (streamRef.current) streamRef.current.visible = false;
       }
@@ -602,33 +617,47 @@ export default function RealisticBuretteClamp() {
     }
   }, [gripWidth]);
 
-  // Liquid level effect - handles both manual slider changes and dispensing
+  // Sync React state with ref values and handle manual slider changes
   useEffect(() => {
-    const tubeVisibleLength = 3.2;
-    const maxLiquidHeight = tubeVisibleLength - 0.06;
-    if (liquidRef.current && meniscusRef.current) {
-      const pct = Math.max(0, Math.min(100, liquidLevel));
-      const scale = pct / 100;
-      liquidRef.current.scale.y = scale;
-      const visibleH = maxLiquidHeight * scale;
-      const bottomY = -tubeVisibleLength / 2 + visibleH / 2;
-      liquidRef.current.position.y = bottomY;
-      meniscusRef.current.position.y = bottomY + visibleH / 2 + 0.004;
-      meniscusRef.current.visible = pct > 0;
+    // Only update refs if not currently dispensing (to avoid conflicts)
+    if (!dispensing) {
+      currentLiquidLevelRef.current = liquidLevel;
+      targetLiquidLevelRef.current = liquidLevel;
       
-      // Update liquid color for all liquid-related meshes
-      const c = new THREE.Color(liquidColor);
-      if (liquidRef.current.material instanceof THREE.MeshPhysicalMaterial) {
-        liquidRef.current.material.color.set(c);
-      }
-      if (meniscusRef.current.material instanceof THREE.MeshPhysicalMaterial) {
-        meniscusRef.current.material.color.set(c);
-      }
-      if (streamRef.current && streamRef.current.material instanceof THREE.MeshPhysicalMaterial) {
-        streamRef.current.material.color.set(c);
+      // Update liquid level directly
+      const tubeVisibleLength = 3.2;
+      const maxLiquidHeight = tubeVisibleLength - 0.06;
+      const clamped = Math.max(0, Math.min(100, liquidLevel));
+      const scale = clamped / 100;
+      
+      if (liquidRef.current) {
+        liquidRef.current.scale.y = scale;
+        const full = maxLiquidHeight;
+        const visibleH = full * scale;
+        const bottomY = -tubeVisibleLength / 2 + visibleH / 2;
+        liquidRef.current.position.y = bottomY;
+
+        if (meniscusRef.current) {
+          meniscusRef.current.position.y = bottomY + visibleH / 2 + 0.004;
+          meniscusRef.current.visible = clamped > 0;
+        }
       }
     }
-  }, [liquidLevel, liquidColor]);
+  }, [liquidLevel]);
+
+  // Handle liquid color changes
+  useEffect(() => {
+    const c = new THREE.Color(liquidColor);
+    if (liquidRef.current && liquidRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+      liquidRef.current.material.color.set(c);
+    }
+    if (meniscusRef.current && meniscusRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+      meniscusRef.current.material.color.set(c);
+    }
+    if (streamRef.current && streamRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+      streamRef.current.material.color.set(c);
+    }
+  }, [liquidColor]);
 
   // Stopcock rotation effect
   useEffect(() => {
@@ -649,6 +678,13 @@ export default function RealisticBuretteClamp() {
       alert("Open the stopcock (click handle) before dispensing.");
       return;
     }
+    
+    if (!dispensing) {
+      // Starting dispensing - sync refs with current state
+      currentLiquidLevelRef.current = liquidLevel;
+      targetLiquidLevelRef.current = liquidLevel;
+    }
+    
     setDispensing((s) => !s);
   };
 
@@ -704,15 +740,16 @@ export default function RealisticBuretteClamp() {
 
             <div>
               <label className="block text-sm font-medium text-cyan-200 mb-3">
-                Liquid Level: {liquidLevel.toFixed(0)}%
+                Liquid Level: {dispensing ? currentLiquidLevelRef.current.toFixed(1) : liquidLevel.toFixed(0)}%
               </label>
               <input
                 type="range"
                 min="0"
                 max="100"
-                value={liquidLevel}
+                value={dispensing ? currentLiquidLevelRef.current : liquidLevel}
                 onChange={(e) => setLiquidLevel(parseInt(e.target.value))}
                 className="w-full accent-blue-500"
+                disabled={dispensing}
               />
             </div>
 

@@ -20,6 +20,11 @@ export default function GlassmorphismBurette() {
   const [stopcockOpen, setStopcockOpen] = useState(false);
   const [autoRotate, setAutoRotate] = useState(true);
 
+  // Refs for smooth dispensing without React state conflicts
+  const currentLiquidLevelRef = useRef(75);
+  const targetLiquidLevelRef = useRef(75);
+  const dispensingSpeedRef = useRef(20.0); // units per second
+
   useEffect(() => {
     if (!mountRef.current) return;
     const container = mountRef.current;
@@ -296,9 +301,11 @@ export default function GlassmorphismBurette() {
 
     burette.add(labels);
 
-    const applyLiquid = (pct: number) => {
-      const clamped = Math.max(0, Math.min(100, pct));
+    // Direct liquid level update function - bypasses React state for smooth animation
+    const updateLiquidLevelDirect = (level: number) => {
+      const clamped = Math.max(0, Math.min(100, level));
       const scale = clamped / 100;
+      
       if (liquidRef.current) {
         liquidRef.current.scale.y = scale;
         const full = maxLiquidHeight;
@@ -311,6 +318,8 @@ export default function GlassmorphismBurette() {
           meniscusRef.current.visible = clamped > 0;
         }
       }
+      
+      // Update colors
       const c = new THREE.Color(liquidColor);
       if (liquidRef.current && liquidRef.current.material instanceof THREE.MeshPhysicalMaterial) {
         liquidRef.current.material.color.set(c);
@@ -323,7 +332,7 @@ export default function GlassmorphismBurette() {
       }
     };
 
-    applyLiquid(liquidLevel);
+    updateLiquidLevelDirect(liquidLevel);
 
     let isDragging = false;
     let lastX = 0;
@@ -377,7 +386,10 @@ export default function GlassmorphismBurette() {
     renderer.domElement.addEventListener("click", onClick);
 
     // Animation loop for auto-rotation and liquid dispensing
+    const clock = new THREE.Clock();
     const animate = () => {
+      const deltaTime = clock.getDelta();
+      
       if (autoRotate && !isDragging && cameraRef.current) {
         theta += 0.0025;
         const r = 7.0;
@@ -386,19 +398,22 @@ export default function GlassmorphismBurette() {
         cameraRef.current.lookAt(0, 0.6, 0);
       }
 
-      // Liquid flows when stopcock is open (realistic behavior)
-      if (stopcockOpen && liquidRef.current) {
+      // Handle smooth dispensing using interpolation - NO React state updates during animation
+      if (stopcockOpen) {
         if (streamRef.current) streamRef.current.visible = true;
-        setLiquidLevel((prev) => {
-          const next = Math.max(0, +(prev - 0.18).toFixed(2));
-          applyLiquid(next);
-          if (next <= 0) {
+        
+        // Update current level directly without React state
+        const levelDecrease = dispensingSpeedRef.current * deltaTime;
+        currentLiquidLevelRef.current = Math.max(0, currentLiquidLevelRef.current - levelDecrease);
+        
+        // Update the visual liquid level directly
+        updateLiquidLevelDirect(currentLiquidLevelRef.current);
+        
             // Auto-close stopcock when empty
+        if (currentLiquidLevelRef.current <= 0) {
             setStopcockOpen(false);
             if (streamRef.current) streamRef.current.visible = false;
           }
-          return next;
-        });
       } else {
         if (streamRef.current) streamRef.current.visible = false;
       }
@@ -430,32 +445,47 @@ export default function GlassmorphismBurette() {
     };
   }, []);
 
+  // Sync React state with ref values and handle manual slider changes
   useEffect(() => {
-    if (liquidRef.current && liquidRef.current.material instanceof THREE.MeshPhysicalMaterial) {
-      liquidRef.current.material.color.set(liquidColor);
-    }
-    if (meniscusRef.current && meniscusRef.current.material instanceof THREE.MeshPhysicalMaterial) {
-      meniscusRef.current.material.color.set(liquidColor);
-    }
-    if (streamRef.current && streamRef.current.material instanceof THREE.MeshPhysicalMaterial) {
-      streamRef.current.material.color.set(liquidColor);
-    }
-  }, [liquidColor]);
+    // Only update refs if stopcock is closed (to avoid conflicts during dispensing)
+    if (!stopcockOpen) {
+      currentLiquidLevelRef.current = liquidLevel;
+      targetLiquidLevelRef.current = liquidLevel;
+      
+      // Update liquid level directly
+      const tubeVisibleLength = 6.0;
+      const maxLiquidHeight = tubeVisibleLength - 0.06;
+      const clamped = Math.max(0, Math.min(100, liquidLevel));
+      const scale = clamped / 100;
+      
+      if (liquidRef.current) {
+        liquidRef.current.scale.y = scale;
+        const full = maxLiquidHeight;
+        const visibleH = full * scale;
+        const bottomY = -tubeVisibleLength / 2 + visibleH / 2;
+        liquidRef.current.position.y = bottomY;
 
-  useEffect(() => {
-    const tubeVisibleLength = 6.0;
-    const maxLiquidHeight = tubeVisibleLength - 0.06;
-    if (liquidRef.current && meniscusRef.current) {
-      const pct = Math.max(0, Math.min(100, liquidLevel));
-      const scale = pct / 100;
-      liquidRef.current.scale.y = scale;
-      const visibleH = maxLiquidHeight * scale;
-      const bottomY = -tubeVisibleLength / 2 + visibleH / 2;
-      liquidRef.current.position.y = bottomY;
-      meniscusRef.current.position.y = bottomY + visibleH / 2 + 0.004;
-      meniscusRef.current.visible = pct > 0;
+        if (meniscusRef.current) {
+          meniscusRef.current.position.y = bottomY + visibleH / 2 + 0.004;
+          meniscusRef.current.visible = clamped > 0;
+        }
+      }
     }
   }, [liquidLevel]);
+
+  // Handle liquid color changes
+  useEffect(() => {
+    const c = new THREE.Color(liquidColor);
+    if (liquidRef.current && liquidRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+      liquidRef.current.material.color.set(c);
+    }
+    if (meniscusRef.current && meniscusRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+      meniscusRef.current.material.color.set(c);
+    }
+    if (streamRef.current && streamRef.current.material instanceof THREE.MeshPhysicalMaterial) {
+      streamRef.current.material.color.set(c);
+    }
+  }, [liquidColor]);
 
   useEffect(() => {
     if (!stopcockRef.current) return;
@@ -489,14 +519,15 @@ export default function GlassmorphismBurette() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-200">Liquid Level: {liquidLevel.toFixed(0)}%</label>
+              <label className="block text-sm font-medium text-slate-200">Liquid Level: {stopcockOpen ? currentLiquidLevelRef.current.toFixed(1) : liquidLevel.toFixed(0)}%</label>
               <input
                 type="range"
                 min="0"
                 max="100"
-                value={liquidLevel}
+                value={stopcockOpen ? currentLiquidLevelRef.current : liquidLevel}
                 onChange={(e) => setLiquidLevel(parseInt(e.target.value))}
                 className="w-full mt-2 accent-blue-500"
+                disabled={stopcockOpen}
               />
             </div>
 

@@ -102,7 +102,10 @@ export default function BuretteClamp({
       leftArm.add(groove);
     }
 
-    leftArm.position.set(-0.8, 0, 0);
+    // Set initial arm positions based on current gripWidth
+    const maxWidth = 0.85;
+    const width = (gripWidth / 100) * maxWidth;
+    leftArm.position.set(-0.3 - width, 0, 0);
     clampGroup.add(leftArm);
 
     // RIGHT ARM - Mirror of left (horizontal, along Z axis)
@@ -132,7 +135,7 @@ export default function BuretteClamp({
       rightArm.add(groove);
     }
 
-    rightArm.position.set(0.8, 0, 0);
+    rightArm.position.set(0.3 + width, 0, 0);
     clampGroup.add(rightArm);
 
     // Horizontal support beam connecting arms (connects to bracket)
