@@ -57,7 +57,6 @@ export default function TitrationSimulator3D() {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const dropletRef = useRef<THREE.Mesh | null>(null);
-  const stirRodRef = useRef<THREE.Mesh | null>(null);
   const animationIdRef = useRef<number | null>(null);
   
   const [solutionType, setSolutionType] = useState('acid');
@@ -69,7 +68,6 @@ export default function TitrationSimulator3D() {
   const [isRunning, setIsRunning] = useState(false);
   const [data, setData] = useState<{volume: number, pH: number}[]>([]);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [isStirring, setIsStirring] = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
   const [autoRotate, setAutoRotate] = useState(true);
   const [buretteStopcockOpen, setBuretteStopcockOpen] = useState(false);
@@ -79,7 +77,6 @@ export default function TitrationSimulator3D() {
   const buretteLiquidLevelRef = useRef(100);
   
   const lastUpdateRef = useRef(Date.now());
-  const stirAngleRef = useRef(0);
   const mouseDownRef = useRef(false);
   const lastMouseRef = useRef({ x: 0, y: 0 });
   const cameraAngleRef = useRef({ theta: 0, phi: Math.PI / 4 });
@@ -192,20 +189,6 @@ export default function TitrationSimulator3D() {
     dropletRef.current = droplet;
     scene.add(droplet);
     
-    const stirRodGeometry = new THREE.CylinderGeometry(0.04, 0.04, 4, 16);
-    const stirRodMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0x999999,
-      roughness: 0.2,
-      metalness: 0.8
-    });
-    const stirRod = new THREE.Mesh(stirRodGeometry, stirRodMaterial);
-    stirRod.position.set(0.6, 0.5, 0);
-    stirRod.rotation.z = 0.2;
-    stirRod.visible = false;
-    stirRod.castShadow = true;
-    stirRodRef.current = stirRod;
-    scene.add(stirRod);
-    
     const gridHelper = new THREE.GridHelper(40, 40, 0x444444, 0x222222); // Increased grid size for larger world
     gridHelper.position.y = -0.4;
     scene.add(gridHelper);
@@ -229,11 +212,6 @@ export default function TitrationSimulator3D() {
         if (glassmorphismBuretteRef.current) {
           // Remove wobble effect to prevent interference with liquid level
           (glassmorphismBuretteRef.current as THREE.Group).position.y = 10.5; // Lowered burette position
-        }
-        
-        if (conicalFlaskRef.current && isStirring) {
-          const wobble = Math.sin(Date.now() * 0.003) * 0.01;
-          (conicalFlaskRef.current as THREE.Group).rotation.z = wobble;
         }
         
         rendererRef.current.render(sceneRef.current, cameraRef.current);
@@ -409,24 +387,6 @@ export default function TitrationSimulator3D() {
   }, [isRunning, sceneReady]);
   
   useEffect(() => {
-    if (stirRodRef.current && sceneReady) {
-      stirRodRef.current.visible = isStirring;
-      
-      if (isStirring) {
-        const interval = setInterval(() => {
-          stirAngleRef.current += 0.15;
-          if (stirRodRef.current) {
-            stirRodRef.current.position.x = Math.cos(stirAngleRef.current) * 0.4;
-            stirRodRef.current.position.z = Math.sin(stirAngleRef.current) * 0.4;
-            stirRodRef.current.rotation.y = stirAngleRef.current;
-          }
-        }, 30);
-        return () => clearInterval(interval);
-      }
-    }
-  }, [isStirring, sceneReady]);
-  
-  useEffect(() => {
     if (titrantAdded > 0) {
       setData(prev => {
         const lastPoint = prev[prev.length - 1];
@@ -509,7 +469,6 @@ export default function TitrationSimulator3D() {
                 <li>• Auto-rotate shows all angles</li>
               </ul>
               <ul className="space-y-1">
-                <li>• Stir activates the stirring rod</li>
                 <li>• Watch stopcock rotate when dispensing</li>
                 <li>• Monitor color change as pH shifts</li>
                 <li>• Equipment vibrates realistically</li>
@@ -622,16 +581,6 @@ export default function TitrationSimulator3D() {
             >
               {isRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
               {isRunning ? 'Pause' : 'Start'}
-            </button>
-            <button
-              onClick={() => setIsStirring(!isStirring)}
-              className={`px-4 py-3 rounded-lg font-semibold transition shadow-lg ${
-                isStirring
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              }`}
-            >
-              Stir
             </button>
             <button
               onClick={reset}
