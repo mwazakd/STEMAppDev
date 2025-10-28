@@ -56,7 +56,6 @@ export default function TitrationSimulator3D() {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const dropletRef = useRef<THREE.Mesh | null>(null);
   const animationIdRef = useRef<number | null>(null);
   
   const [solutionType, setSolutionType] = useState('acid');
@@ -68,6 +67,8 @@ export default function TitrationSimulator3D() {
   const [isRunning, setIsRunning] = useState(false);
   const [data, setData] = useState<{volume: number, pH: number}[]>([]);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
+  const [showChart, setShowChart] = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
   const [autoRotate, setAutoRotate] = useState(true);
   const [buretteStopcockOpen, setBuretteStopcockOpen] = useState(false);
@@ -176,18 +177,7 @@ export default function TitrationSimulator3D() {
     
     // Glassmorphism burette will be added by the IntegratedGlassmorphismBurette component
     
-    const dropletGeometry = new THREE.SphereGeometry(0.08, 16, 16);
-    const dropletMaterial = new THREE.MeshPhongMaterial({
-      color: 0x4488ff,
-      transparent: true,
-      opacity: 0.9,
-      shininess: 100
-    });
-    const droplet = new THREE.Mesh(dropletGeometry, dropletMaterial);
-    droplet.position.set(0, 3.5, 0);
-    droplet.visible = false;
-    dropletRef.current = droplet;
-    scene.add(droplet);
+    // Droplet removed - using proper stream from burette instead
     
     const gridHelper = new THREE.GridHelper(40, 40, 0x444444, 0x222222); // Increased grid size for larger world
     gridHelper.position.y = -0.4;
@@ -289,15 +279,6 @@ export default function TitrationSimulator3D() {
 
   // Remove separate useEffect for burette liquid level updates - now handled directly in titration interval
 
-  // Separate useEffect for stopcock control
-  useEffect(() => {
-    if (isRunning && !buretteStopcockOpen) {
-      setBuretteStopcockOpen(true);
-    } else if (!isRunning && buretteStopcockOpen) {
-      setBuretteStopcockOpen(false);
-    }
-  }, [isRunning, buretteStopcockOpen]);
-  
   // Reset manual rotation flag when auto-rotate is turned on
   useEffect(() => {
     if (autoRotate) {
@@ -337,54 +318,7 @@ export default function TitrationSimulator3D() {
     }
   }, [isRunning]);
   
-  useEffect(() => {
-    if (dropletRef.current && sceneReady) {
-      if (isRunning) {
-        dropletRef.current.visible = true;
-        // Create a continuous stream effect with multiple segments
-        const streamGeometry = new THREE.CylinderGeometry(0.015, 0.015, 0.8, 8);
-        const streamMaterial = new THREE.MeshPhongMaterial({
-          color: 0x4488ff,
-          transparent: true,
-          opacity: 0.9,
-          shininess: 100
-        });
-        
-        // Create multiple stream segments for continuous flow
-        const streamSegments: THREE.Mesh[] = [];
-        for (let i = 0; i < 8; i++) {
-          const segment = new THREE.Mesh(streamGeometry, streamMaterial);
-          segment.position.set(0, 3.5 - (i * 0.4), 0);
-          segment.visible = true;
-          if (sceneRef.current) {
-            sceneRef.current.add(segment);
-          }
-          streamSegments.push(segment);
-        }
-        
-        const interval = setInterval(() => {
-          streamSegments.forEach((segment) => {
-            segment.position.y -= 0.15;
-            if (segment.position.y < -0.5) {
-              segment.position.y = 3.5;
-            }
-          });
-        }, 20);
-        
-        return () => {
-          clearInterval(interval);
-          streamSegments.forEach(segment => {
-            if (sceneRef.current) {
-              sceneRef.current.remove(segment);
-            }
-          });
-        };
-      } else {
-        dropletRef.current.visible = false;
-        dropletRef.current.position.y = 3.5;
-      }
-    }
-  }, [isRunning, sceneReady]);
+  // Droplet useEffect removed - using proper stream from burette instead
   
   useEffect(() => {
     if (titrantAdded > 0) {
@@ -402,12 +336,18 @@ export default function TitrationSimulator3D() {
   }, [titrantAdded, currentPH]);
   
   const toggleDispensing = () => {
-    if (!isRunning) lastUpdateRef.current = Date.now();
+    if (!isRunning) {
+      lastUpdateRef.current = Date.now();
+      setBuretteStopcockOpen(true); // Open stopcock when starting
+    } else {
+      setBuretteStopcockOpen(false); // Close stopcock when stopping
+    }
     setIsRunning(!isRunning);
   };
   
   const reset = () => {
     setIsRunning(false);
+    setBuretteStopcockOpen(false); // Close stopcock on reset
     setTitrantAdded(0);
     setData([]);
     // Reset burette liquid level ref to start at 0 mark (full)
@@ -424,7 +364,7 @@ export default function TitrationSimulator3D() {
           liquidLevelRef={buretteLiquidLevelRef}
           liquidColor="#4488ff"
           stopcockOpen={buretteStopcockOpen}
-          onStopcockToggle={() => setBuretteStopcockOpen(!buretteStopcockOpen)}
+          conicalFlaskLiquidLevel={((5 + titrantAdded) / 50) * 100} // Pass conical flask liquid level
           scene={sceneRef.current}
           groupRef={glassmorphismBuretteRef}
           gripWidth={buretteGripWidth}
@@ -479,7 +419,8 @@ export default function TitrationSimulator3D() {
       )}
       
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-72 bg-black bg-opacity-50 backdrop-blur-md p-6 overflow-y-auto border-r border-cyan-500 border-opacity-30 shadow-xl">
+        {/* Configuration Sidebar - Hidden on mobile, visible on desktop */}
+        <div className={`hidden lg:block lg:w-72 bg-black bg-opacity-50 backdrop-blur-md p-6 overflow-y-auto border-r border-cyan-500 border-opacity-30 shadow-xl ${showConfig ? 'block' : ''}`}>
           <h2 className="text-xl font-bold text-cyan-300 mb-4">Configuration</h2>
           
           <div className="space-y-4">
@@ -616,12 +557,86 @@ export default function TitrationSimulator3D() {
           )}
         </div>
         
+        {/* Main 3D View Area */}
         <div className="flex-1 relative">
           <div ref={mountRef} className="w-full h-full" />
-          <div className="absolute top-4 left-4 bg-black bg-opacity-70 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm shadow-lg">
+          
+          {/* Mobile Controls Overlay */}
+          <div className="lg:hidden absolute top-4 left-4 right-4 flex justify-between items-start z-10">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowConfig(!showConfig)}
+                className="bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm shadow-lg"
+              >
+                ⚙️ Config
+              </button>
+              <button
+                onClick={() => setShowChart(!showChart)}
+                className="bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm shadow-lg"
+              >
+                📊 Chart
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAutoRotate(!autoRotate)}
+                className={`px-3 py-2 rounded-lg text-sm font-semibold transition shadow-lg ${
+                  autoRotate
+                    ? 'bg-cyan-500 text-white'
+                    : 'bg-gray-700 text-gray-300'
+                }`}
+              >
+                {autoRotate ? '🔄' : '⏸️'}
+              </button>
+            </div>
+          </div>
+          
+          {/* Mobile Status Indicator - Left Side Vertical */}
+          <div className="lg:hidden absolute top-16 left-4 bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-4 rounded-lg shadow-lg">
+            <div className="space-y-3">
+              <div className="text-center">
+                <p className="text-xs text-cyan-300">pH</p>
+                <p className="text-lg font-bold text-cyan-100">{currentPH.toFixed(2)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-purple-300">Volume</p>
+                <p className="text-lg font-bold text-purple-100">{titrantAdded.toFixed(1)} mL</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-green-300">Status</p>
+                <p className="text-sm font-bold text-green-100">{isRunning ? 'Running' : 'Stopped'}</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Mobile Floating Start Button */}
+          <div className="lg:hidden absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+            <div className="flex gap-2">
+              <button
+                onClick={toggleDispensing}
+                className={`flex items-center justify-center gap-2 px-6 py-4 rounded-full font-semibold transition shadow-xl ${
+                  isRunning
+                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                }`}
+              >
+                {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+                <span className="text-lg">{isRunning ? 'Pause' : 'Start'}</span>
+              </button>
+              <button
+                onClick={reset}
+                className="px-4 py-4 bg-gray-600 hover:bg-gray-700 text-white rounded-full font-semibold transition shadow-xl"
+              >
+                <RotateCcw className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+          
+          {/* Desktop Controls */}
+          <div className="hidden lg:block absolute top-4 left-4 bg-black bg-opacity-70 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm shadow-lg">
             <p className="font-semibold">🖱️ Drag to rotate • 🖱️ Scroll to zoom</p>
           </div>
-          <div className="absolute top-4 right-4 flex flex-col gap-2">
+          <div className="hidden lg:block absolute top-4 right-4 flex flex-col gap-2">
             <button
               onClick={() => setAutoRotate(!autoRotate)}
               className={`px-4 py-2 rounded-lg font-semibold transition shadow-lg ${
@@ -653,7 +668,8 @@ export default function TitrationSimulator3D() {
           )}
         </div>
         
-        <div className="w-96 bg-black bg-opacity-50 backdrop-blur-md p-6 overflow-y-auto border-l border-cyan-500 border-opacity-30 shadow-xl">
+        {/* pH Chart Sidebar - Hidden on mobile, visible on desktop */}
+        <div className={`hidden lg:block lg:w-96 bg-black bg-opacity-50 backdrop-blur-md p-6 overflow-y-auto border-l border-cyan-500 border-opacity-30 shadow-xl ${showChart ? 'block' : ''}`}>
           <h2 className="text-xl font-bold text-cyan-300 mb-4">Titration Curve</h2>
           
           {data.length > 0 ? (
@@ -711,6 +727,205 @@ export default function TitrationSimulator3D() {
           </div>
         </div>
       </div>
+      
+      {/* Mobile Configuration Overlay */}
+      {showConfig && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-black bg-opacity-75 backdrop-blur-sm">
+          <div className="h-full bg-black bg-opacity-90 backdrop-blur-md p-6 overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-cyan-300">Configuration</h2>
+              <button
+                onClick={() => setShowConfig(false)}
+                className="text-white text-2xl hover:text-cyan-400"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-cyan-200 mb-2">
+                  Analyte (in flask)
+                </label>
+                <select
+                  value={solutionType}
+                  onChange={(e) => setSolutionType(e.target.value)}
+                  className="w-full p-3 bg-gray-900 text-white border border-cyan-500 border-opacity-50 rounded-lg focus:border-cyan-400 focus:outline-none"
+                  disabled={isRunning || titrantAdded > 0}
+                >
+                  <option value="acid">Acid (HCl)</option>
+                  <option value="base">Base (NaOH)</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-cyan-200 mb-2">
+                  Concentration: {solutionConc} M
+                </label>
+                <input
+                  type="range"
+                  min="0.01"
+                  max="1"
+                  step="0.01"
+                  value={solutionConc}
+                  onChange={(e) => setSolutionConc(parseFloat(e.target.value))}
+                  className="w-full accent-cyan-500"
+                  disabled={isRunning || titrantAdded > 0}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-cyan-200 mb-2">
+                  Volume: {solutionVol} mL
+                </label>
+                <input
+                  type="range"
+                  min="10"
+                  max="50"
+                  step="5"
+                  value={solutionVol}
+                  onChange={(e) => setSolutionVol(parseFloat(e.target.value))}
+                  className="w-full accent-cyan-500"
+                  disabled={isRunning || titrantAdded > 0}
+                />
+              </div>
+              
+              <hr className="border-gray-700 my-4" />
+              
+              <div>
+                <label className="block text-sm font-medium text-cyan-200 mb-2">
+                  Titrant (in burette)
+                </label>
+                <select
+                  value={titrantType}
+                  onChange={(e) => setTitrantType(e.target.value)}
+                  className="w-full p-3 bg-gray-900 text-white border border-cyan-500 border-opacity-50 rounded-lg focus:border-cyan-400 focus:outline-none"
+                  disabled={isRunning || titrantAdded > 0}
+                >
+                  <option value="acid">Acid (HCl)</option>
+                  <option value="base">Base (NaOH)</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-cyan-200 mb-2">
+                  Concentration: {titrantConc} M
+                </label>
+                <input
+                  type="range"
+                  min="0.01"
+                  max="1"
+                  step="0.01"
+                  value={titrantConc}
+                  onChange={(e) => setTitrantConc(parseFloat(e.target.value))}
+                  className="w-full accent-cyan-500"
+                  disabled={isRunning || titrantAdded > 0}
+                />
+              </div>
+              
+              <div className="bg-indigo-900 bg-opacity-60 p-3 rounded-lg border border-indigo-500 shadow-inner">
+                <p className="text-sm text-cyan-200">
+                  <strong>Equivalence Point:</strong> {equivalencePoint} mL
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={toggleDispensing}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition shadow-lg ${
+                  isRunning
+                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                }`}
+              >
+                {isRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                {isRunning ? 'Pause' : 'Start'}
+              </button>
+              <button
+                onClick={reset}
+                className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition shadow-lg"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 mt-6">
+              <div className="bg-cyan-900 bg-opacity-60 p-3 rounded-lg border border-cyan-500 shadow-inner">
+                <p className="text-xs text-cyan-300 mb-1">pH</p>
+                <p className="text-2xl font-bold text-cyan-100">{currentPH.toFixed(2)}</p>
+              </div>
+              <div className="bg-purple-900 bg-opacity-60 p-3 rounded-lg border border-purple-500 shadow-inner">
+                <p className="text-xs text-purple-300 mb-1">Volume Added</p>
+                <p className="text-2xl font-bold text-purple-100">{titrantAdded.toFixed(1)} mL</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Mobile Chart Overlay */}
+      {showChart && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-black bg-opacity-75 backdrop-blur-sm">
+          <div className="h-full bg-black bg-opacity-90 backdrop-blur-md p-6 overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-cyan-300">Titration Curve</h2>
+              <button
+                onClick={() => setShowChart(false)}
+                className="text-white text-2xl hover:text-cyan-400"
+              >
+                ×
+              </button>
+            </div>
+            
+            {data.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={data}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                  <XAxis
+                    dataKey="volume"
+                    label={{ value: 'Volume (mL)', position: 'insideBottom', offset: -5, fill: '#fff' }}
+                    stroke="#fff"
+                    tick={{ fill: '#fff' }}
+                  />
+                  <YAxis
+                    domain={[0, 14]}
+                    label={{ value: 'pH', angle: -90, position: 'insideLeft', fill: '#fff' }}
+                    stroke="#fff"
+                    tick={{ fill: '#fff' }}
+                  />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }}
+                    labelStyle={{ color: '#fff' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="pH"
+                    stroke="#06b6d4"
+                    strokeWidth={3}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-gray-400 border border-gray-600 rounded-lg">
+                Start the titration to see the curve
+              </div>
+            )}
+            
+            <div className="mt-6 space-y-3">
+              <div className="bg-gray-800 bg-opacity-60 p-3 rounded-lg border border-gray-600">
+                <h3 className="text-sm font-semibold text-cyan-300 mb-2">Key Points:</h3>
+                <ul className="text-xs text-gray-300 space-y-1">
+                  <li>• Steep curve = equivalence point region</li>
+                  <li>• Color change occurs near pH 8-10</li>
+                  <li>• Buffer region shows gradual pH change</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

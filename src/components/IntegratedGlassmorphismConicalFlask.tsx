@@ -69,11 +69,11 @@ export default function IntegratedGlassmorphismConicalFlask({
       (groupRef as React.MutableRefObject<THREE.Group | null>).current = flaskGroup;
     }
 
-    // Glass material - ultra-realistic
+    // Glass material - ultra-realistic with consistent properties
     const glassMaterial = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
       transparent: true,
-      opacity: 0.15,
+      opacity: 0.12, // Slightly more transparent to help stream visibility
       roughness: 0.02,
       metalness: 0.1,
       transmission: 0.98,
@@ -83,7 +83,9 @@ export default function IntegratedGlassmorphismConicalFlask({
       clearcoatRoughness: 0.1,
       ior: 1.52,
       reflectivity: 0.9,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      depthWrite: false, // Prevent depth writing issues with stream
+      depthTest: true
     });
     
     // Conical body (main part)
@@ -92,6 +94,7 @@ export default function IntegratedGlassmorphismConicalFlask({
     cone.position.y = -0.25;
     cone.castShadow = true;
     cone.receiveShadow = true;
+    cone.renderOrder = 0; // Ensure proper render order
     flaskGroup.add(cone);
     
     // Flat bottom
@@ -109,22 +112,12 @@ export default function IntegratedGlassmorphismConicalFlask({
     neck.position.y = 2.1;
     neck.castShadow = true;
     neck.receiveShadow = true;
+    neck.renderOrder = 0; // Ensure proper render order
     flaskGroup.add(neck);
     
-    // Top rim with thickness
+    // Top rim with thickness - using same material as main flask
     const rimGeometry = new THREE.TorusGeometry(0.4, 0.06, 16, 64);
-    const rimMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.3,
-      roughness: 0.01,
-      metalness: 0.2,
-      transmission: 0.95,
-      thickness: 0.5,
-      clearcoat: 1.0,
-      ior: 1.52
-    });
-    const rim = new THREE.Mesh(rimGeometry, rimMaterial);
+    const rim = new THREE.Mesh(rimGeometry, glassMaterial.clone());
     rim.position.y = 2.7;
     rim.rotation.x = Math.PI / 2;
     flaskGroup.add(rim);
@@ -166,7 +159,7 @@ export default function IntegratedGlassmorphismConicalFlask({
     liquidRef.current = liquid;
     flaskGroup.add(liquid);
     
-    // Add some bubbles for realism
+    // Add some bubbles for realism (restore)
     const bubbleGeometry = new THREE.SphereGeometry(0.04, 16, 16);
     const bubbleMaterial = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
@@ -177,7 +170,6 @@ export default function IntegratedGlassmorphismConicalFlask({
       metalness: 0,
       ior: 1.33
     });
-    
     for (let i = 0; i < 8; i++) {
       const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
       const angle = (i / 8) * Math.PI * 2;

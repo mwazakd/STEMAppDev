@@ -8,10 +8,10 @@ interface IntegratedGlassmorphismBuretteProps {
   liquidLevelRef?: React.RefObject<number>;
   liquidColor?: string;
   stopcockOpen?: boolean;
-  onStopcockToggle?: () => void;
   scene: THREE.Scene;
   groupRef?: React.RefObject<THREE.Group>;
   gripWidth?: number; // Add grip width control
+  conicalFlaskLiquidLevel?: number; // Add conical flask liquid level for dynamic stream length
 }
 
 export default function IntegratedGlassmorphismBurette({
@@ -20,22 +20,63 @@ export default function IntegratedGlassmorphismBurette({
   liquidLevelRef,
   liquidColor = "#1976d2",
   stopcockOpen = false,
-  onStopcockToggle,
   scene,
   groupRef,
-  gripWidth = 25
+  gripWidth = 25,
+  conicalFlaskLiquidLevel = 0
 }: IntegratedGlassmorphismBuretteProps) {
   const liquidRef = useRef<THREE.Mesh | null>(null);
   const meniscusRef = useRef<THREE.Mesh | null>(null);
   const stopcockRef = useRef<THREE.Group | null>(null);
   const streamRef = useRef<THREE.Mesh | null>(null);
+  const outletRef = useRef<THREE.Mesh | null>(null);
   const labelGroupRef = useRef<THREE.Group | null>(null);
   const buretteGroupRef = useRef<THREE.Group | null>(null);
   const clampGroupRef = useRef<THREE.Group | null>(null);
   const animationIdRef = useRef<number | null>(null);
+  const stopcockOpenRef = useRef(stopcockOpen);
+
+  // Function to calculate dynamic stream length based on conical flask liquid level
+  const calculateStreamLength = (flaskLiquidLevel: number) => {
+    // Conical flask dimensions and positioning
+    const flaskPosition = 2.5; // Conical flask y position in world coordinates
+    const flaskBottomY = flaskPosition - 2; // Flask bottom at y=0.5
+    const maxLiquidHeight = 3.4; // Max liquid height in flask
+    
+    // Calculate current liquid height in flask
+    const liquidHeight = (flaskLiquidLevel / 100) * maxLiquidHeight;
+    const liquidSurfaceY = flaskBottomY + liquidHeight;
+    
+    // Burette outlet position (approximate)
+    const burettePosition = 8.5; // Burette y position in world coordinates
+    const outletOffset = -3.5; // Approximate outlet offset from burette center
+    const outletY = burettePosition + outletOffset; // Approximately y=5.0
+    
+    // Calculate distance from outlet to liquid surface
+    const distance = outletY - liquidSurfaceY;
+    
+    // Ensure minimum stream length and maximum reasonable length
+    return Math.max(0.5, Math.min(5.0, distance));
+  };
+
+  // Function to update stream geometry dynamically
+  const updateStreamGeometry = (flaskLiquidLevel: number) => {
+    if (!streamRef.current || !outletRef.current) return;
+    
+    const newLength = calculateStreamLength(flaskLiquidLevel);
+    // Use CapsuleGeometry instead of CylinderGeometry to avoid sphere artifacts
+    const newGeometry = new THREE.CapsuleGeometry(0.015, newLength, 4, 8);
+    
+    // Dispose old geometry to prevent memory leak
+    streamRef.current.geometry.dispose();
+    streamRef.current.geometry = newGeometry;
+    
+    // Update position to center the stream - use actual outlet position
+    streamRef.current.position.y = outletRef.current.position.y - (newLength / 2);
+  };
 
   // Function to update liquid level directly
-  const updateLiquidLevelDirect = (level: number) => {
+  const updateLiquidLevelDirect = (level: number, isStopcockOpen: boolean) => {
     if (!liquidRef.current || !meniscusRef.current) return;
     
     const tubeVisibleLength = 6.0;
@@ -49,6 +90,12 @@ export default function IntegratedGlassmorphismBurette({
     liquidRef.current.position.y = bottomY;
     meniscusRef.current.position.y = bottomY + visibleH / 2 + 0.004;
     meniscusRef.current.visible = pct > 0;
+    
+    // Update stream visibility based on current liquid level and stopcock state
+    if (streamRef.current) {
+      const shouldBeVisible = isStopcockOpen && pct > 0;
+      streamRef.current.visible = shouldBeVisible;
+    }
   };
 
   useEffect(() => {
@@ -112,6 +159,7 @@ export default function IntegratedGlassmorphismBurette({
       glassMat.clone()
     );
     outlet.position.y = taper.position.y - taperLength / 2 - 0.07;
+    outletRef.current = outlet; // Store reference for stream positioning
     buretteGroup.add(outlet);
 
     // Inner nozzle
@@ -205,20 +253,29 @@ export default function IntegratedGlassmorphismBurette({
     meniscusRef.current = menMesh;
     buretteGroup.add(menMesh);
 
-    // Stream visualization
-    const streamGeom = new THREE.CylinderGeometry(0.018, 0.02, 0.9, 12);
+    // Stream visualization - dynamic length based on conical flask liquid level
+    const initialStreamLength = calculateStreamLength(conicalFlaskLiquidLevel);
+    // Use CapsuleGeometry instead of CylinderGeometry to avoid sphere artifacts
+    const streamGeom = new THREE.CapsuleGeometry(0.015, initialStreamLength, 4, 8);
     const streamMat = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color(liquidColor),
       transparent: true,
-      opacity: 0.7,
-      transmission: 0.6,
-      roughness: 0.05
+      opacity: 0.9, // Higher opacity for better visibility
+      transmission: 0.1, // Lower transmission to make it more opaque
+      roughness: 0.05,
+      depthWrite: false, // Prevent depth writing issues
+      depthTest: true,
+      side: THREE.FrontSide // Use FrontSide instead of DoubleSide to avoid rendering artifacts
     });
     const streamMesh = new THREE.Mesh(streamGeom, streamMat);
     streamMesh.visible = false;
+    streamMesh.renderOrder = 1000; // Render stream on top of flask
+    streamMesh.castShadow = false; // Disable shadow casting to avoid artifacts
+    streamMesh.receiveShadow = false; // Disable shadow receiving
     streamRef.current = streamMesh;
-    // Position stream relative to burette group
-    streamMesh.position.y = outlet.position.y - 0.5;
+    // Position stream to start from outlet and extend downward
+    // Stream center should be halfway between outlet and target
+    streamMesh.position.y = outletRef.current.position.y - (initialStreamLength / 2);
     streamMesh.position.x = 0;
     streamMesh.position.z = 0;
     buretteGroup.add(streamMesh);
@@ -273,15 +330,10 @@ export default function IntegratedGlassmorphismBurette({
     buretteGroup.add(labels);
     scene.add(buretteGroup);
 
-    // Add click listener to stopcock
-    if (scGroup) {
-      scGroup.userData = { clickable: true };
-    }
-
     // Start animation loop to update liquid level from ref
     const animate = () => {
       if (liquidLevelRef && liquidLevelRef.current !== null && liquidLevelRef.current !== undefined) {
-        updateLiquidLevelDirect(liquidLevelRef.current);
+        updateLiquidLevelDirect(liquidLevelRef.current, stopcockOpenRef.current);
       }
       animationIdRef.current = requestAnimationFrame(animate);
     };
@@ -294,9 +346,19 @@ export default function IntegratedGlassmorphismBurette({
       }
       // Stream is part of buretteGroup, so it will be removed automatically
     };
-  }, [scene, position, scale, onStopcockToggle, liquidLevelRef]);
+  }, [scene, position, scale, liquidLevelRef]);
 
   // Remove old liquid level useEffect - now handled by animation loop
+
+  // Update stopcock ref for animation loop
+  useEffect(() => {
+    stopcockOpenRef.current = stopcockOpen;
+  }, [stopcockOpen]);
+
+  // Update stream geometry when conical flask liquid level changes
+  useEffect(() => {
+    updateStreamGeometry(conicalFlaskLiquidLevel);
+  }, [conicalFlaskLiquidLevel]);
 
   // Update stopcock rotation
   useEffect(() => {
@@ -321,9 +383,10 @@ export default function IntegratedGlassmorphismBurette({
   // Update stream visibility
   useEffect(() => {
     if (streamRef.current && liquidLevelRef) {
-      streamRef.current.visible = stopcockOpen && (liquidLevelRef.current || 0) > 0;
+      const shouldBeVisible = stopcockOpen && (liquidLevelRef.current || 0) > 0;
+      streamRef.current.visible = shouldBeVisible;
     }
-  }, [stopcockOpen, liquidLevelRef]);
+  }, [stopcockOpen]);
 
   return (
     <>
