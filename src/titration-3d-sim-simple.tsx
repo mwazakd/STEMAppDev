@@ -77,11 +77,6 @@ export default function TitrationSimulator3D() {
   // Ref to track liquid level without causing React re-renders
   const buretteLiquidLevelRef = useRef(100);
   
-  // Bubble animation state
-  const bubblesRef = useRef<THREE.Mesh[]>([]);
-  const bubbleSpawnTimerRef = useRef(0);
-  const isRunningRef = useRef(false);
-  
   const lastUpdateRef = useRef(Date.now());
   const mouseDownRef = useRef(false);
   const lastMouseRef = useRef({ x: 0, y: 0 });
@@ -151,75 +146,6 @@ export default function TitrationSimulator3D() {
     
     // Conical flask will be added by the IntegratedGlassmorphismConicalFlask component
     
-    // Bubble creation and animation functions
-    const createBubble = () => {
-      const bubbleGeometry = new THREE.SphereGeometry(0.05 + Math.random() * 0.03, 8, 6);
-      const bubbleMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.3,
-        roughness: 0.0,
-        metalness: 0.0,
-        transmission: 0.9,
-        thickness: 0.01
-      });
-      const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
-      
-      // Position bubble randomly at the bottom of the beaker area
-      bubble.position.set(
-        (Math.random() - 0.5) * 2, // Random X position within beaker
-        0.5, // Start at beaker bottom
-        (Math.random() - 0.5) * 2  // Random Z position within beaker
-      );
-      
-      // Add slight random velocity
-      bubble.userData = {
-        velocity: new THREE.Vector3(
-          (Math.random() - 0.5) * 0.02,
-          0.05 + Math.random() * 0.03,
-          (Math.random() - 0.5) * 0.02
-        ),
-        life: 1.0
-      };
-      
-      scene.add(bubble);
-      bubblesRef.current.push(bubble);
-      return bubble;
-    };
-    
-    const updateBubbles = (deltaTime: number) => {
-      // Spawn new bubbles when titration is running
-      if (isRunningRef.current) {
-        bubbleSpawnTimerRef.current += deltaTime;
-        if (bubbleSpawnTimerRef.current > 0.1) { // Spawn bubble every 100ms
-          createBubble();
-          bubbleSpawnTimerRef.current = 0;
-        }
-      }
-      
-      // Update existing bubbles
-      bubblesRef.current.forEach((bubble, index) => {
-        const userData = bubble.userData;
-        
-        // Update position
-        bubble.position.add(userData.velocity.clone().multiplyScalar(deltaTime * 60));
-        
-        // Update life
-        userData.life -= deltaTime * 0.5;
-        
-        // Update opacity based on life
-        if (bubble.material instanceof THREE.MeshPhysicalMaterial) {
-          bubble.material.opacity = userData.life * 0.3;
-        }
-        
-        // Remove bubble if it's too high or life is over
-        if (bubble.position.y > 8 || userData.life <= 0) {
-          scene.remove(bubble);
-          bubblesRef.current.splice(index, 1);
-        }
-      });
-    };
-    
     const standGroup = new THREE.Group();
     
     const basePlateGeometry = new THREE.CylinderGeometry(3.5, 3.5, 0.3, 32); // Increased diameter from 1.8 to 3.5
@@ -261,14 +187,6 @@ export default function TitrationSimulator3D() {
     
     const animate = () => {
       if (sceneRef.current && cameraRef.current && rendererRef.current) {
-        // Calculate delta time for smooth animations
-        const now = Date.now();
-        const deltaTime = (now - lastUpdateRef.current) / 1000;
-        lastUpdateRef.current = now;
-        
-        // Update bubbles
-        updateBubbles(deltaTime);
-        
         if (autoRotate && !mouseDownRef.current && !userHasRotatedRef.current) {
           autoRotateRef.current += 0.002;
           cameraAngleRef.current.theta = autoRotateRef.current;
@@ -347,13 +265,6 @@ export default function TitrationSimulator3D() {
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
       }
-      // Clean up bubbles
-      bubblesRef.current.forEach(bubble => {
-        if (sceneRef.current) {
-          sceneRef.current.remove(bubble);
-        }
-      });
-      bubblesRef.current = [];
       if (mountRef.current && renderer.domElement && mountRef.current.contains(renderer.domElement)) {
         mountRef.current.removeChild(renderer.domElement);
       }
@@ -361,18 +272,13 @@ export default function TitrationSimulator3D() {
     };
   }, []);
   
-  // Keep isRunningRef in sync with isRunning state for bubble animation
-  useEffect(() => {
-    isRunningRef.current = isRunning;
-  }, [isRunning]);
-  
   useEffect(() => {
     // Conical flask liquid level will be handled by the IntegratedGlassmorphismConicalFlask component
     // No need for separate liquid level management here
   }, [indicatorColor, solutionVol, titrantAdded, sceneReady]);
 
   // Remove separate useEffect for burette liquid level updates - now handled directly in titration interval
-
+  
   // Reset manual rotation flag when auto-rotate is turned on
   useEffect(() => {
     if (autoRotate) {
@@ -473,6 +379,7 @@ export default function TitrationSimulator3D() {
           liquidColor={`#${indicatorColor.getHexString()}`}
           scene={sceneRef.current}
           groupRef={conicalFlaskRef}
+          isRunning={isRunning} // Pass isRunning state to control bubbles
         />
       )}
       <div className="bg-black bg-opacity-40 backdrop-blur-md p-4 border-b border-cyan-500 border-opacity-30 shadow-lg">

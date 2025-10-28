@@ -8,6 +8,7 @@ interface IntegratedGlassmorphismConicalFlaskProps {
   liquidColor?: string;
   scene: THREE.Scene;
   groupRef?: React.RefObject<THREE.Group>;
+  isRunning?: boolean; // Add prop to control bubble visibility
 }
 
 export default function IntegratedGlassmorphismConicalFlask({
@@ -16,10 +17,13 @@ export default function IntegratedGlassmorphismConicalFlask({
   liquidLevel = 0,
   liquidColor = "#4488ff",
   scene,
-  groupRef
+  groupRef,
+  isRunning = false
 }: IntegratedGlassmorphismConicalFlaskProps) {
   const flaskRef = useRef<THREE.Group | null>(null);
   const liquidRef = useRef<THREE.Mesh | null>(null);
+  const bubblesRef = useRef<THREE.Mesh[]>([]);
+  const particlesRef = useRef<THREE.Points | null>(null);
   const animationIdRef = useRef<number | null>(null);
 
   // Function to update liquid level directly
@@ -170,6 +174,8 @@ export default function IntegratedGlassmorphismConicalFlask({
       metalness: 0,
       ior: 1.33
     });
+    
+    const bubbles: THREE.Mesh[] = [];
     for (let i = 0; i < 8; i++) {
       const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
       const angle = (i / 8) * Math.PI * 2;
@@ -178,8 +184,11 @@ export default function IntegratedGlassmorphismConicalFlask({
       bubble.position.z = Math.sin(angle) * radius;
       bubble.position.y = -1.8 + Math.random() * 0.4;
       bubble.scale.setScalar(0.5 + Math.random() * 1.2);
+      bubble.visible = isRunning; // Set initial visibility based on isRunning
       flaskGroup.add(bubble);
+      bubbles.push(bubble);
     }
+    bubblesRef.current = bubbles;
     
     // Add glowing particles in liquid
     const particleCount = 20;
@@ -205,6 +214,8 @@ export default function IntegratedGlassmorphismConicalFlask({
     });
     
     const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+    particles.visible = isRunning; // Set initial visibility based on isRunning
+    particlesRef.current = particles;
     flaskGroup.add(particles);
 
     scene.add(flaskGroup);
@@ -223,6 +234,18 @@ export default function IntegratedGlassmorphismConicalFlask({
       }
     };
   }, [scene, position, scale, liquidLevel, liquidColor]);
+
+  // Control bubble and particle visibility based on isRunning state
+  useEffect(() => {
+    if (bubblesRef.current) {
+      bubblesRef.current.forEach(bubble => {
+        bubble.visible = isRunning;
+      });
+    }
+    if (particlesRef.current) {
+      particlesRef.current.visible = isRunning;
+    }
+  }, [isRunning]);
 
   return null;
 }
