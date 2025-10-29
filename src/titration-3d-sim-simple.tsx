@@ -467,7 +467,7 @@ export default function TitrationSimulator3D() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Beaker className="w-8 h-8 text-cyan-400" />
-            <h1 className="text-3xl font-bold text-white">3D Titration Simulator - Conical Flask</h1>
+            <h1 className="text-3xl font-bold text-white">3D Titration Simulator</h1>
           </div>
           <button
             onClick={() => setShowTutorial(!showTutorial)}
@@ -719,10 +719,6 @@ export default function TitrationSimulator3D() {
             <p className="font-semibold">🖱️ Drag to rotate • 🖱️ Scroll to zoom</p>
           </div>
           
-          {/* Mobile Controls */}
-          <div className="lg:hidden absolute top-4 left-4 bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-xs shadow-lg">
-            <p className="font-semibold">👆 Drag to rotate • 🤏 Pinch to zoom</p>
-          </div>
           <div className="hidden lg:block absolute top-4 right-4 flex flex-col gap-2">
             <button
               onClick={() => setAutoRotate(!autoRotate)}
