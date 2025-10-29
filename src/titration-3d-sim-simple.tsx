@@ -87,11 +87,18 @@ export default function TitrationSimulator3D() {
   const glassmorphismBuretteRef = useRef<THREE.Group | null>(null);
   const conicalFlaskRef = useRef<THREE.Group | null>(null);
   
+  // Panning refs - dynamic orbit center
+  const panOffsetRef = useRef(new THREE.Vector3(0, 2, 0)); // Initial look-at point (0, 2, 0)
+  const isPanningRef = useRef(false);
+  const isMiddleMouseRef = useRef(false);
+  
   // Touch handling refs
   const touchDownRef = useRef(false);
   const lastTouchRef = useRef({ x: 0, y: 0 });
   const initialDistanceRef = useRef(0);
   const initialCameraDistanceRef = useRef(18);
+  const touchPanModeRef = useRef(false); // Track if two-finger pan (vs pinch zoom)
+  const initialTouchCenterRef = useRef({ x: 0, y: 0 });
   
   const currentPH = useMemo(() => {
     return calculatePH(solutionConc, solutionVol, solutionType, titrantConc, titrantAdded, titrantType);
@@ -193,17 +200,20 @@ export default function TitrationSimulator3D() {
     
     const animate = () => {
       if (sceneRef.current && cameraRef.current && rendererRef.current) {
-        if (autoRotate && !mouseDownRef.current && !userHasRotatedRef.current) {
+        if (autoRotate && !mouseDownRef.current && !userHasRotatedRef.current && !isPanningRef.current) {
           autoRotateRef.current += 0.002;
           cameraAngleRef.current.theta = autoRotateRef.current;
         }
         
-        // Update camera position based on current angles and distance
+        // Get current look-at point (dynamic orbit center)
+        const lookAtPoint = panOffsetRef.current;
+        
+        // Update camera position based on current angles and distance around dynamic look-at point
         const radius = cameraDistanceRef.current;
-        cameraRef.current.position.x = radius * Math.sin(cameraAngleRef.current.phi) * Math.cos(cameraAngleRef.current.theta);
-        cameraRef.current.position.y = radius * Math.cos(cameraAngleRef.current.phi) + 2;
-        cameraRef.current.position.z = radius * Math.sin(cameraAngleRef.current.phi) * Math.sin(cameraAngleRef.current.theta);
-        cameraRef.current.lookAt(0, 2, 0);
+        cameraRef.current.position.x = lookAtPoint.x + radius * Math.sin(cameraAngleRef.current.phi) * Math.cos(cameraAngleRef.current.theta);
+        cameraRef.current.position.y = lookAtPoint.y + radius * Math.cos(cameraAngleRef.current.phi);
+        cameraRef.current.position.z = lookAtPoint.z + radius * Math.sin(cameraAngleRef.current.phi) * Math.sin(cameraAngleRef.current.theta);
+        cameraRef.current.lookAt(lookAtPoint);
         
         if (glassmorphismBuretteRef.current) {
           // Remove wobble effect to prevent interference with liquid level
@@ -217,18 +227,48 @@ export default function TitrationSimulator3D() {
     animate();
     
     const handleMouseDown = (e: MouseEvent) => {
-      mouseDownRef.current = true;
-      lastMouseRef.current = { x: e.clientX, y: e.clientY };
-      setAutoRotate(false);
+      // Detect middle mouse button (button 1) or Ctrl+Left click for panning
+      if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
+        isPanningRef.current = true;
+        isMiddleMouseRef.current = true;
+        lastMouseRef.current = { x: e.clientX, y: e.clientY };
+        setAutoRotate(false);
+      } else if (e.button === 0) {
+        // Left mouse button - orbit
+        mouseDownRef.current = true;
+        lastMouseRef.current = { x: e.clientX, y: e.clientY };
+        setAutoRotate(false);
+      }
     };
     
     const handleMouseMove = (e: MouseEvent) => {
-      if (mouseDownRef.current && cameraRef.current) {
+      if (isPanningRef.current && cameraRef.current) {
+        // Panning mode - translate look-at point
         const deltaX = e.clientX - lastMouseRef.current.x;
         const deltaY = e.clientY - lastMouseRef.current.y;
         
-        cameraAngleRef.current.theta += deltaX * 0.005;
-        cameraAngleRef.current.phi -= deltaY * 0.005;
+        // Calculate camera's right and up vectors for panning
+        const forward = new THREE.Vector3();
+        cameraRef.current.getWorldDirection(forward);
+        const right = new THREE.Vector3();
+        right.crossVectors(forward, cameraRef.current.up).normalize();
+        const up = cameraRef.current.up.clone().normalize();
+        
+        // Pan speed based on distance from look-at point
+        const panSpeed = cameraDistanceRef.current * 0.001;
+        
+        // Update pan offset (look-at point) - REVERSED directions
+        panOffsetRef.current.add(right.multiplyScalar(-deltaX * panSpeed)); // REVERSED
+        panOffsetRef.current.add(up.multiplyScalar(deltaY * panSpeed)); // REVERSED
+        
+        lastMouseRef.current = { x: e.clientX, y: e.clientY };
+      } else if (mouseDownRef.current && cameraRef.current && !isMiddleMouseRef.current) {
+        // Orbit mode - rotate around look-at point (REVERSED)
+        const deltaX = e.clientX - lastMouseRef.current.x;
+        const deltaY = e.clientY - lastMouseRef.current.y;
+        
+        cameraAngleRef.current.theta -= deltaX * 0.005; // REVERSED
+        cameraAngleRef.current.phi += deltaY * 0.005; // REVERSED
         cameraAngleRef.current.phi = Math.max(0.1, Math.min(Math.PI / 2, cameraAngleRef.current.phi));
         
         // Mark that user has manually rotated
@@ -239,14 +279,26 @@ export default function TitrationSimulator3D() {
     };
     
     const handleMouseUp = () => {
-      mouseDownRef.current = false;
+      if (isMiddleMouseRef.current) {
+        isPanningRef.current = false;
+        isMiddleMouseRef.current = false;
+      } else {
+        mouseDownRef.current = false;
+      }
     };
     
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       if (cameraRef.current) {
         const delta = e.deltaY * 0.01;
-        cameraDistanceRef.current = Math.max(5, Math.min(40, cameraDistanceRef.current + delta)); // Increased zoom range for larger world
+        
+        // Blender-style zoom: change distance along view direction (REVERSED)
+        // Positive delta means zoom in (decrease distance), negative means zoom out (increase distance)
+        const zoomSpeed = 0.5;
+        const newDistance = cameraDistanceRef.current + (delta * zoomSpeed); // REVERSED
+        cameraDistanceRef.current = Math.max(5, Math.min(40, newDistance));
+        
+        // Camera position will be recalculated in animation loop based on new distance
       }
     };
     
@@ -259,9 +311,10 @@ export default function TitrationSimulator3D() {
         // Single touch - rotation
         const touch = e.touches[0];
         lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+        touchPanModeRef.current = false;
         setAutoRotate(false);
       } else if (e.touches.length === 2) {
-        // Two touches - pinch to zoom
+        // Two touches - determine if pan or zoom
         const touch1 = e.touches[0];
         const touch2 = e.touches[1];
         const distance = Math.sqrt(
@@ -270,6 +323,15 @@ export default function TitrationSimulator3D() {
         );
         initialDistanceRef.current = distance;
         initialCameraDistanceRef.current = cameraDistanceRef.current;
+        
+        // Calculate initial center point
+        initialTouchCenterRef.current = {
+          x: (touch1.clientX + touch2.clientX) / 2,
+          y: (touch1.clientY + touch2.clientY) / 2
+        };
+        
+        // Reset pan mode - will be determined in handleTouchMove
+        touchPanModeRef.current = false;
       }
     };
     
@@ -277,13 +339,13 @@ export default function TitrationSimulator3D() {
       e.preventDefault();
       
       if (e.touches.length === 1 && touchDownRef.current && cameraRef.current) {
-        // Single touch - rotation
+        // Single touch - rotation (REVERSED)
         const touch = e.touches[0];
         const deltaX = touch.clientX - lastTouchRef.current.x;
         const deltaY = touch.clientY - lastTouchRef.current.y;
         
-        cameraAngleRef.current.theta += deltaX * 0.005;
-        cameraAngleRef.current.phi -= deltaY * 0.005;
+        cameraAngleRef.current.theta -= deltaX * 0.005; // REVERSED
+        cameraAngleRef.current.phi += deltaY * 0.005; // REVERSED
         cameraAngleRef.current.phi = Math.max(0.1, Math.min(Math.PI / 2, cameraAngleRef.current.phi));
         
         // Mark that user has manually rotated
@@ -291,7 +353,6 @@ export default function TitrationSimulator3D() {
         
         lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
       } else if (e.touches.length === 2 && cameraRef.current) {
-        // Two touches - pinch to zoom
         const touch1 = e.touches[0];
         const touch2 = e.touches[1];
         const distance = Math.sqrt(
@@ -299,16 +360,83 @@ export default function TitrationSimulator3D() {
           Math.pow(touch2.clientY - touch1.clientY, 2)
         );
         
-        const scale = distance / initialDistanceRef.current;
-        const newDistance = initialCameraDistanceRef.current / scale;
-        cameraDistanceRef.current = Math.max(5, Math.min(40, newDistance));
+        // Calculate current center point
+        const currentCenter = {
+          x: (touch1.clientX + touch2.clientX) / 2,
+          y: (touch1.clientY + touch2.clientY) / 2
+        };
+        
+        // Calculate how much distance changed (for zoom detection)
+        const distanceChange = Math.abs(distance - initialDistanceRef.current);
+        const distanceChangePercent = distanceChange / initialDistanceRef.current;
+        
+        // Calculate how much center moved (for pan detection)
+        const centerMove = Math.sqrt(
+          Math.pow(currentCenter.x - initialTouchCenterRef.current.x, 2) +
+          Math.pow(currentCenter.y - initialTouchCenterRef.current.y, 2)
+        );
+        
+        // Determine if this is pan or zoom based on which change is more significant
+        // If distance changes significantly more than center movement, it's zoom
+        // If center moves significantly more than distance changes, it's pan
+        const isZoom = distanceChangePercent > 0.15 && distanceChangePercent > (centerMove / initialDistanceRef.current);
+        
+        if (isZoom) {
+          // Pinch to zoom
+          touchPanModeRef.current = false;
+          const scale = distance / initialDistanceRef.current;
+          
+          // Calculate new distance based on scale change (REVERSED)
+          // Scale > 1 means fingers moved apart (zoom in), scale < 1 means fingers moved together (zoom out)
+          const zoomSpeed = 0.5;
+          const distanceChange = (1 - scale) * initialCameraDistanceRef.current * zoomSpeed;
+          const newDistance = initialCameraDistanceRef.current + distanceChange; // REVERSED
+          cameraDistanceRef.current = Math.max(5, Math.min(40, newDistance));
+          
+          // Update initial distance for next frame
+          initialDistanceRef.current = distance;
+          initialCameraDistanceRef.current = cameraDistanceRef.current;
+        } else {
+          // Two-finger pan
+          touchPanModeRef.current = true;
+          isPanningRef.current = true;
+          
+          const deltaX = currentCenter.x - initialTouchCenterRef.current.x;
+          const deltaY = currentCenter.y - initialTouchCenterRef.current.y;
+          
+          // Calculate camera's right and up vectors for panning
+          const forward = new THREE.Vector3();
+          cameraRef.current.getWorldDirection(forward);
+          const right = new THREE.Vector3();
+          right.crossVectors(forward, cameraRef.current.up).normalize();
+          const up = cameraRef.current.up.clone().normalize();
+          
+          // Pan speed based on distance from look-at point
+          const panSpeed = cameraDistanceRef.current * 0.001;
+          
+          // Update pan offset (look-at point) - REVERSED directions
+          panOffsetRef.current.add(right.multiplyScalar(-deltaX * panSpeed)); // REVERSED
+          panOffsetRef.current.add(up.multiplyScalar(deltaY * panSpeed)); // REVERSED
+          
+          // Update initial center for next frame
+          initialTouchCenterRef.current = currentCenter;
+        }
       }
     };
     
     const handleTouchEnd = (e: TouchEvent) => {
       e.preventDefault();
       touchDownRef.current = false;
+      touchPanModeRef.current = false;
+      isPanningRef.current = false;
     };
+    
+    // Prevent context menu on middle mouse button
+    renderer.domElement.addEventListener('contextmenu', (e) => {
+      if (isMiddleMouseRef.current) {
+        e.preventDefault();
+      }
+    });
     
     renderer.domElement.addEventListener('mousedown', handleMouseDown);
     renderer.domElement.addEventListener('mousemove', handleMouseMove);
