@@ -202,4 +202,11 @@ canvas {
     width: 100% !important;
     height: 100% !important;
   }
+  
+  /* Safe area support for mobile navigation bars */
+  @supports (padding: max(0px)) {
+    .pb-safe {
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+  }
 }

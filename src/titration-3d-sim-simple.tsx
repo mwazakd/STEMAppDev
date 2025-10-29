@@ -764,8 +764,8 @@ export default function TitrationSimulator3D() {
           )}
           
           {/* Mobile Floating Start Button */}
-          <div className="lg:hidden absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-            <div className="flex gap-2">
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 z-10 pb-safe" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
+            <div className="flex gap-2 justify-center pb-4">
               <button
                 onClick={toggleDispensing}
                 className={`flex items-center justify-center gap-2 px-6 py-4 rounded-full font-semibold transition shadow-xl ${
