@@ -764,24 +764,24 @@ export default function TitrationSimulator3D() {
           )}
           
           {/* Mobile Floating Start Button */}
-          <div className="lg:hidden absolute bottom-2 left-2 right-2 z-10">
-            <div className="flex gap-2 justify-center">
+          <div className="lg:hidden absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+            <div className="flex gap-2">
               <button
                 onClick={toggleDispensing}
-                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-full font-semibold transition shadow-xl ${
+                className={`flex items-center justify-center gap-2 px-6 py-4 rounded-full font-semibold transition shadow-xl ${
                   isRunning
                     ? 'bg-red-500 hover:bg-red-600 text-white'
                     : 'bg-green-500 hover:bg-green-600 text-white'
                 }`}
               >
-                {isRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                <span className="text-sm">{isRunning ? 'Pause' : 'Start'}</span>
+                {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+                <span className="text-lg">{isRunning ? 'Pause' : 'Start'}</span>
               </button>
               <button
                 onClick={reset}
-                className="px-3 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-full font-semibold transition shadow-xl"
+                className="px-4 py-4 bg-gray-600 hover:bg-gray-700 text-white rounded-full font-semibold transition shadow-xl"
               >
-                <RotateCcw className="w-5 h-5" />
+                <RotateCcw className="w-6 h-6" />
               </button>
             </div>
           </div>
