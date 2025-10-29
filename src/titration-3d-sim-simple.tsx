@@ -382,7 +382,6 @@ export default function TitrationSimulator3D() {
           liquidColor={`#${indicatorColor.getHexString()}`}
           scene={sceneRef.current}
           groupRef={conicalFlaskRef}
-          isRunning={isRunning} // Pass isRunning state to control bubbles
           stopcockOpen={buretteStopcockOpen} // Pass stopcock state to control stream
         />
       )}

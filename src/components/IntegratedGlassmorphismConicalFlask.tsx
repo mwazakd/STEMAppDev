@@ -8,7 +8,6 @@ interface IntegratedGlassmorphismConicalFlaskProps {
   liquidColor?: string;
   scene: THREE.Scene;
   groupRef?: React.RefObject<THREE.Group>;
-  isRunning?: boolean; // Add prop to control bubble visibility
   stopcockOpen?: boolean; // Add prop to control when stream is active
 }
 
@@ -19,13 +18,12 @@ export default function IntegratedGlassmorphismConicalFlask({
   liquidColor = "#4488ff",
   scene,
   groupRef,
-  isRunning = false,
   stopcockOpen = false
 }: IntegratedGlassmorphismConicalFlaskProps) {
   const flaskRef = useRef<THREE.Group | null>(null);
   const liquidRef = useRef<THREE.Mesh | null>(null);
   const bubblesRef = useRef<THREE.Mesh[]>([]);
-  const particlesRef = useRef<THREE.Points | null>(null);
+  const particlesRef = useRef<{small: THREE.Points, medium: THREE.Points, large: THREE.Points} | null>(null);
   const animationIdRef = useRef<number | null>(null);
 
   // Function to update liquid level directly
