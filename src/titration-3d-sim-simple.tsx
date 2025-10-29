@@ -298,8 +298,11 @@ export default function TitrationSimulator3D() {
         const increment = flowRate * delta;
         
         setTitrantAdded(prev => {
-          const newVol = Math.min(prev + increment, 100);
-          if (newVol >= 100) setIsRunning(false);
+          const newVol = Math.min(prev + increment, 50); // Burette holds max 50mL
+          if (newVol >= 50) { // Burette empty when 50mL added
+            setIsRunning(false);
+            setBuretteStopcockOpen(false); // Close stopcock when burette is empty
+          }
           
           // Update burette liquid level ref directly for smooth animation
           // Since markings go from 0 (top) to 50 (bottom), and liquid starts at 0 mark (full)
@@ -380,6 +383,7 @@ export default function TitrationSimulator3D() {
           scene={sceneRef.current}
           groupRef={conicalFlaskRef}
           isRunning={isRunning} // Pass isRunning state to control bubbles
+          stopcockOpen={buretteStopcockOpen} // Pass stopcock state to control stream
         />
       )}
       <div className="bg-black bg-opacity-40 backdrop-blur-md p-4 border-b border-cyan-500 border-opacity-30 shadow-lg">

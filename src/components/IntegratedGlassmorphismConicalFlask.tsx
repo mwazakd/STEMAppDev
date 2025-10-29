@@ -9,6 +9,7 @@ interface IntegratedGlassmorphismConicalFlaskProps {
   scene: THREE.Scene;
   groupRef?: React.RefObject<THREE.Group>;
   isRunning?: boolean; // Add prop to control bubble visibility
+  stopcockOpen?: boolean; // Add prop to control when stream is active
 }
 
 export default function IntegratedGlassmorphismConicalFlask({
@@ -18,7 +19,8 @@ export default function IntegratedGlassmorphismConicalFlask({
   liquidColor = "#4488ff",
   scene,
   groupRef,
-  isRunning = false
+  isRunning = false,
+  stopcockOpen = false
 }: IntegratedGlassmorphismConicalFlaskProps) {
   const flaskRef = useRef<THREE.Group | null>(null);
   const liquidRef = useRef<THREE.Mesh | null>(null);
@@ -184,49 +186,212 @@ export default function IntegratedGlassmorphismConicalFlask({
       bubble.position.z = Math.sin(angle) * radius;
       bubble.position.y = -1.8 + Math.random() * 0.4;
       bubble.scale.setScalar(0.5 + Math.random() * 1.2);
-      bubble.visible = isRunning; // Set initial visibility based on isRunning
+      bubble.visible = stopcockOpen; // Set initial visibility based on stream state
       flaskGroup.add(bubble);
       bubbles.push(bubble);
     }
     bubblesRef.current = bubbles;
     
-    // Add glowing particles in liquid
-    const particleCount = 20;
-    const particlesGeometry = new THREE.BufferGeometry();
-    const particlePositions = new Float32Array(particleCount * 3);
+    // Add glowing particles in liquid with different sizes
+    const smallParticleCount = 15; // Regular particles
+    const mediumParticleCount = Math.floor(Math.random() * 2) + 1; // 1 or 2 particles 40% bigger
+    const largeParticleCount = Math.floor(Math.random() * 2) + 3; // 3 or 4 particles 100% bigger
     
-    for (let i = 0; i < particleCount; i++) {
+    // Create small particles (regular size)
+    const smallParticlesGeometry = new THREE.BufferGeometry();
+    const smallParticlePositions = new Float32Array(smallParticleCount * 3);
+    
+    for (let i = 0; i < smallParticleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
       const radius = Math.random() * 0.9;
-      particlePositions[i * 3] = Math.cos(angle) * radius;
-      particlePositions[i * 3 + 1] = -1.8 + Math.random() * 1.0;
-      particlePositions[i * 3 + 2] = Math.sin(angle) * radius;
+      smallParticlePositions[i * 3] = Math.cos(angle) * radius;
+      smallParticlePositions[i * 3 + 1] = -1.8 + Math.random() * 1.0;
+      smallParticlePositions[i * 3 + 2] = Math.sin(angle) * radius;
     }
     
-    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    smallParticlesGeometry.setAttribute('position', new THREE.BufferAttribute(smallParticlePositions, 3));
     
-    const particlesMaterial = new THREE.PointsMaterial({
+    const smallParticlesMaterial = new THREE.PointsMaterial({
       color: 0x88ccff,
-      size: 0.025,
+      size: 0.025, // Base size
       transparent: true,
       opacity: 0.7,
       blending: THREE.AdditiveBlending
     });
     
-    const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-    particles.visible = isRunning; // Set initial visibility based on isRunning
-    particlesRef.current = particles;
-    flaskGroup.add(particles);
+    const smallParticles = new THREE.Points(smallParticlesGeometry, smallParticlesMaterial);
+    smallParticles.visible = stopcockOpen;
+    flaskGroup.add(smallParticles);
+    
+    // Create medium particles (40% bigger)
+    const mediumParticlesGeometry = new THREE.BufferGeometry();
+    const mediumParticlePositions = new Float32Array(mediumParticleCount * 3);
+    
+    for (let i = 0; i < mediumParticleCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * 0.9;
+      mediumParticlePositions[i * 3] = Math.cos(angle) * radius;
+      mediumParticlePositions[i * 3 + 1] = -1.8 + Math.random() * 1.0;
+      mediumParticlePositions[i * 3 + 2] = Math.sin(angle) * radius;
+    }
+    
+    mediumParticlesGeometry.setAttribute('position', new THREE.BufferAttribute(mediumParticlePositions, 3));
+    
+    const mediumParticlesMaterial = new THREE.PointsMaterial({
+      color: 0x88ccff,
+      size: 0.035, // 40% bigger (0.025 * 1.4)
+      transparent: true,
+      opacity: 0.8, // Slightly more opaque
+      blending: THREE.AdditiveBlending
+    });
+    
+    const mediumParticles = new THREE.Points(mediumParticlesGeometry, mediumParticlesMaterial);
+    mediumParticles.visible = stopcockOpen;
+    flaskGroup.add(mediumParticles);
+    
+    // Create large particles (100% bigger)
+    const largeParticlesGeometry = new THREE.BufferGeometry();
+    const largeParticlePositions = new Float32Array(largeParticleCount * 3);
+    
+    for (let i = 0; i < largeParticleCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * 0.9;
+      largeParticlePositions[i * 3] = Math.cos(angle) * radius;
+      largeParticlePositions[i * 3 + 1] = -1.8 + Math.random() * 1.0;
+      largeParticlePositions[i * 3 + 2] = Math.sin(angle) * radius;
+    }
+    
+    largeParticlesGeometry.setAttribute('position', new THREE.BufferAttribute(largeParticlePositions, 3));
+    
+    const largeParticlesMaterial = new THREE.PointsMaterial({
+      color: 0x88ccff,
+      size: 0.05, // 100% bigger (0.025 * 2.0)
+      transparent: true,
+      opacity: 0.9, // More opaque
+      blending: THREE.AdditiveBlending
+    });
+    
+    const largeParticles = new THREE.Points(largeParticlesGeometry, largeParticlesMaterial);
+    largeParticles.visible = stopcockOpen;
+    flaskGroup.add(largeParticles);
+    
+    // Store references for animation
+    particlesRef.current = { 
+      small: smallParticles, 
+      medium: mediumParticles, 
+      large: largeParticles 
+    };
 
     scene.add(flaskGroup);
 
     // Start animation loop to update liquid level from props
     const animate = () => {
-      updateLiquidLevelDirect(liquidLevel);
+    updateLiquidLevelDirect(liquidLevel);
+
+      // Update bubble positions based on liquid level (only when stream is active)
+      if (bubblesRef.current && stopcockOpen) {
+        // Clamp liquid level to prevent bubbles from rising beyond flask capacity
+        const clampedLiquidLevel = Math.max(0, Math.min(100, liquidLevel));
+        const liquidScale = clampedLiquidLevel / 100;
+        const maxRise = 3.4; // Same as maxLiquidHeight
+        
+        bubblesRef.current.forEach((bubble, index) => {
+          // Calculate each bubble's rise based on liquid level
+          const baseY = -2.3 + (index / 8) * 0.4; // Distribute bubbles evenly
+          const riseAmount = liquidScale * maxRise;
+          bubble.position.y = baseY + riseAmount;
+          
+          // Calculate dynamic radius based on liquid level to keep bubbles within conical flask
+          const flaskBottomRadius = 1.75;
+          const flaskTopRadius = 0.38;
+          const flaskHeight = 3.5;
+          
+          // Calculate current liquid radius at this height
+          const currentLiquidHeight = liquidScale * maxRise;
+          const currentRadius = flaskBottomRadius - (flaskBottomRadius - flaskTopRadius) * (currentLiquidHeight / flaskHeight);
+          
+          // Recalculate X/Z positions to stay within liquid bounds
+          const angle = (index / 8) * Math.PI * 2;
+          const maxRadius = Math.max(0.1, currentRadius * 0.8); // 80% of liquid radius, minimum 0.1
+          const radius = 0.1 + Math.random() * (maxRadius - 0.1);
+          
+          bubble.position.x = Math.cos(angle) * radius;
+          bubble.position.z = Math.sin(angle) * radius;
+        });
+      }
+      
+      // Update particle positions based on liquid level (only when stream is active)
+      if (particlesRef.current && stopcockOpen) {
+        // Clamp liquid level to prevent particles from rising beyond flask capacity
+        const clampedLiquidLevel = Math.max(0, Math.min(100, liquidLevel));
+        const liquidScale = clampedLiquidLevel / 100;
+        const maxRise = 3.4; // Same as maxLiquidHeight
+        
+        // Update small particles
+        const smallPositions = particlesRef.current.small.geometry.attributes.position.array as Float32Array;
+        for (let i = 0; i < smallPositions.length / 3; i++) {
+          const index = i * 3;
+          const baseY = -2.0 + (i / (smallPositions.length / 3)) * 0.5;
+          const riseAmount = liquidScale * maxRise;
+          smallPositions[index + 1] = baseY + riseAmount;
+          
+          const streamCenterX = 0;
+          const streamCenterZ = 0;
+          const clusterRadius = 0.3;
+          const angle = Math.random() * Math.PI * 2;
+          const distance = Math.random() * clusterRadius;
+          const randomOffset = (Math.random() - 0.5) * 0.2;
+          
+          smallPositions[index] = streamCenterX + Math.cos(angle) * distance + randomOffset;
+          smallPositions[index + 2] = streamCenterZ + Math.sin(angle) * distance + randomOffset;
+        }
+        particlesRef.current.small.geometry.attributes.position.needsUpdate = true;
+        
+        // Update medium particles
+        const mediumPositions = particlesRef.current.medium.geometry.attributes.position.array as Float32Array;
+        for (let i = 0; i < mediumPositions.length / 3; i++) {
+          const index = i * 3;
+          const baseY = -2.0 + (i / (mediumPositions.length / 3)) * 0.5;
+          const riseAmount = liquidScale * maxRise;
+          mediumPositions[index + 1] = baseY + riseAmount;
+          
+          const streamCenterX = 0;
+          const streamCenterZ = 0;
+          const clusterRadius = 0.3;
+          const angle = Math.random() * Math.PI * 2;
+          const distance = Math.random() * clusterRadius;
+          const randomOffset = (Math.random() - 0.5) * 0.2;
+          
+          mediumPositions[index] = streamCenterX + Math.cos(angle) * distance + randomOffset;
+          mediumPositions[index + 2] = streamCenterZ + Math.sin(angle) * distance + randomOffset;
+        }
+        particlesRef.current.medium.geometry.attributes.position.needsUpdate = true;
+        
+        // Update large particles
+        const largePositions = particlesRef.current.large.geometry.attributes.position.array as Float32Array;
+        for (let i = 0; i < largePositions.length / 3; i++) {
+          const index = i * 3;
+          const baseY = -2.0 + (i / (largePositions.length / 3)) * 0.5;
+          const riseAmount = liquidScale * maxRise;
+          largePositions[index + 1] = baseY + riseAmount;
+          
+          const streamCenterX = 0;
+          const streamCenterZ = 0;
+          const clusterRadius = 0.3;
+          const angle = Math.random() * Math.PI * 2;
+          const distance = Math.random() * clusterRadius;
+          const randomOffset = (Math.random() - 0.5) * 0.2;
+          
+          largePositions[index] = streamCenterX + Math.cos(angle) * distance + randomOffset;
+          largePositions[index + 2] = streamCenterZ + Math.sin(angle) * distance + randomOffset;
+        }
+        particlesRef.current.large.geometry.attributes.position.needsUpdate = true;
+      }
+      
       animationIdRef.current = requestAnimationFrame(animate);
     };
     animate();
-
+    
     return () => {
       scene.remove(flaskGroup);
       if (animationIdRef.current) {
@@ -235,17 +400,19 @@ export default function IntegratedGlassmorphismConicalFlask({
     };
   }, [scene, position, scale, liquidLevel, liquidColor]);
 
-  // Control bubble and particle visibility based on isRunning state
+  // Control bubble and particle visibility based on stream state
   useEffect(() => {
     if (bubblesRef.current) {
       bubblesRef.current.forEach(bubble => {
-        bubble.visible = isRunning;
+        bubble.visible = stopcockOpen; // Bubbles only visible when stream is active
       });
     }
     if (particlesRef.current) {
-      particlesRef.current.visible = isRunning;
+      particlesRef.current.small.visible = stopcockOpen; // Small particles only visible when stream is active
+      particlesRef.current.medium.visible = stopcockOpen; // Medium particles only visible when stream is active
+      particlesRef.current.large.visible = stopcockOpen; // Large particles only visible when stream is active
     }
-  }, [isRunning]);
+  }, [stopcockOpen]);
 
   return null;
 }
