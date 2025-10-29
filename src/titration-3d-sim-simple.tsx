@@ -73,7 +73,6 @@ export default function TitrationSimulator3D() {
   const [autoRotate, setAutoRotate] = useState(true);
   const [buretteStopcockOpen, setBuretteStopcockOpen] = useState(false);
   const [buretteGripWidth, setBuretteGripWidth] = useState(25); // Default to burette diameter grip
-  const collapseTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Ref to track liquid level without causing React re-renders
   const buretteLiquidLevelRef = useRef(100);
@@ -365,18 +364,6 @@ export default function TitrationSimulator3D() {
     }
   }, [autoRotate]);
   
-  // Mobile-only timer functionality (simplified since header is hidden on mobile)
-  const resetHeaderTimer = () => {
-    // Only run on mobile devices
-    const isMobile = window.innerWidth < 1024; // lg breakpoint
-    if (!isMobile) return;
-    
-    // Clear any existing timer
-    if (collapseTimerRef.current) {
-      clearTimeout(collapseTimerRef.current);
-      collapseTimerRef.current = null;
-    }
-  };
   
   
   useEffect(() => {
@@ -670,10 +657,7 @@ export default function TitrationSimulator3D() {
             <div className="flex flex-col gap-2">
               {/* Config Button */}
               <button
-                onClick={() => {
-                  setShowConfig(!showConfig);
-                  resetHeaderTimer();
-                }}
+                onClick={() => setShowConfig(!showConfig)}
                 className="bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm shadow-lg"
               >
                 ⚙️ Config
@@ -699,10 +683,7 @@ export default function TitrationSimulator3D() {
               
               {/* Chart Button */}
               <button
-                onClick={() => {
-                  setShowChart(!showChart);
-                  resetHeaderTimer();
-                }}
+                onClick={() => setShowChart(!showChart)}
                 className="bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm shadow-lg"
               >
                 📊 Chart
@@ -712,10 +693,7 @@ export default function TitrationSimulator3D() {
             {/* Auto-rotate Button - Right Side */}
             <div className="flex gap-2">
               <button
-                onClick={() => {
-                  setAutoRotate(!autoRotate);
-                  resetHeaderTimer();
-                }}
+                onClick={() => setAutoRotate(!autoRotate)}
                 className={`px-3 py-2 rounded-lg text-sm font-semibold transition shadow-lg ${
                   autoRotate
                     ? 'bg-cyan-500 text-white'
@@ -730,10 +708,7 @@ export default function TitrationSimulator3D() {
           {/* Mobile Guide Button */}
           <div className="lg:hidden absolute top-4 right-4 z-20">
             <button
-              onClick={() => {
-                setShowTutorial(!showTutorial);
-                resetHeaderTimer();
-              }}
+              onClick={() => setShowTutorial(!showTutorial)}
               className="bg-black bg-opacity-80 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm shadow-lg flex items-center gap-2"
             >
               <Info className="w-4 h-4" />
@@ -792,10 +767,7 @@ export default function TitrationSimulator3D() {
           <div className="lg:hidden absolute bottom-2 left-2 right-2 z-10">
             <div className="flex gap-2 justify-center">
               <button
-                onClick={() => {
-                  toggleDispensing();
-                  resetHeaderTimer();
-                }}
+                onClick={toggleDispensing}
                 className={`flex items-center justify-center gap-2 px-4 py-3 rounded-full font-semibold transition shadow-xl ${
                   isRunning
                     ? 'bg-red-500 hover:bg-red-600 text-white'
@@ -806,10 +778,7 @@ export default function TitrationSimulator3D() {
                 <span className="text-sm">{isRunning ? 'Pause' : 'Start'}</span>
               </button>
               <button
-                onClick={() => {
-                  reset();
-                  resetHeaderTimer();
-                }}
+                onClick={reset}
                 className="px-3 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-full font-semibold transition shadow-xl"
               >
                 <RotateCcw className="w-5 h-5" />
