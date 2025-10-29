@@ -653,7 +653,7 @@ export default function TitrationSimulator3D() {
           </div>
 
           {/* Mobile Controls Overlay - Single Stack */}
-          <div className="lg:hidden absolute top-16 left-4 right-4 flex justify-between items-start z-10">
+          <div className="lg:hidden absolute top-16 left-4 z-10">
             <div className="flex flex-col gap-2">
               {/* Config Button */}
               <button
@@ -687,20 +687,6 @@ export default function TitrationSimulator3D() {
                 className="bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm shadow-lg"
               >
                 📊 Chart
-              </button>
-            </div>
-            
-            {/* Auto-rotate Button - Right Side */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setAutoRotate(!autoRotate)}
-                className={`px-3 py-2 rounded-lg text-sm font-semibold transition shadow-lg ${
-                  autoRotate
-                    ? 'bg-cyan-500 text-white'
-                    : 'bg-gray-700 text-gray-300'
-                }`}
-              >
-                {autoRotate ? '🔄' : '⏸️'}
               </button>
             </div>
           </div>
@@ -765,7 +751,7 @@ export default function TitrationSimulator3D() {
           
           {/* Mobile Floating Start Button */}
           <div className="lg:hidden fixed bottom-0 left-0 right-0 z-10 pb-safe" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
-            <div className="flex gap-2 justify-center pb-4">
+            <div className="flex gap-2 justify-center pb-2">
               <button
                 onClick={toggleDispensing}
                 className={`flex items-center justify-center gap-2 px-6 py-4 rounded-full font-semibold transition shadow-xl ${
