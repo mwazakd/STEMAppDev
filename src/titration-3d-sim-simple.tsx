@@ -87,6 +87,12 @@ export default function TitrationSimulator3D() {
   const glassmorphismBuretteRef = useRef<THREE.Group | null>(null);
   const conicalFlaskRef = useRef<THREE.Group | null>(null);
   
+  // Touch handling refs
+  const touchDownRef = useRef(false);
+  const lastTouchRef = useRef({ x: 0, y: 0 });
+  const initialDistanceRef = useRef(0);
+  const initialCameraDistanceRef = useRef(18);
+  
   const currentPH = useMemo(() => {
     return calculatePH(solutionConc, solutionVol, solutionType, titrantConc, titrantAdded, titrantType);
   }, [solutionConc, solutionVol, solutionType, titrantConc, titrantAdded, titrantType]);
@@ -244,10 +250,75 @@ export default function TitrationSimulator3D() {
       }
     };
     
+    // Touch event handlers for mobile
+    const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      touchDownRef.current = true;
+      
+      if (e.touches.length === 1) {
+        // Single touch - rotation
+        const touch = e.touches[0];
+        lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+        setAutoRotate(false);
+      } else if (e.touches.length === 2) {
+        // Two touches - pinch to zoom
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const distance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) + 
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+        initialDistanceRef.current = distance;
+        initialCameraDistanceRef.current = cameraDistanceRef.current;
+      }
+    };
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      
+      if (e.touches.length === 1 && touchDownRef.current && cameraRef.current) {
+        // Single touch - rotation
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - lastTouchRef.current.x;
+        const deltaY = touch.clientY - lastTouchRef.current.y;
+        
+        cameraAngleRef.current.theta -= deltaX * 0.005;
+        cameraAngleRef.current.phi -= deltaY * 0.005;
+        cameraAngleRef.current.phi = Math.max(0.1, Math.min(Math.PI / 2, cameraAngleRef.current.phi));
+        
+        // Mark that user has manually rotated
+        userHasRotatedRef.current = true;
+        
+        lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+      } else if (e.touches.length === 2 && cameraRef.current) {
+        // Two touches - pinch to zoom
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const distance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) + 
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+        
+        const scale = distance / initialDistanceRef.current;
+        const newDistance = initialCameraDistanceRef.current / scale;
+        cameraDistanceRef.current = Math.max(5, Math.min(40, newDistance));
+      }
+    };
+    
+    const handleTouchEnd = (e: TouchEvent) => {
+      e.preventDefault();
+      touchDownRef.current = false;
+    };
+    
     renderer.domElement.addEventListener('mousedown', handleMouseDown);
     renderer.domElement.addEventListener('mousemove', handleMouseMove);
     renderer.domElement.addEventListener('mouseup', handleMouseUp);
     renderer.domElement.addEventListener('wheel', handleWheel);
+    
+    // Add touch event listeners
+    renderer.domElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+    renderer.domElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+    renderer.domElement.addEventListener('touchend', handleTouchEnd, { passive: false });
     
     const handleResize = () => {
       if (mountRef.current && cameraRef.current && rendererRef.current) {
@@ -262,6 +333,13 @@ export default function TitrationSimulator3D() {
     
     return () => {
       window.removeEventListener('resize', handleResize);
+      renderer.domElement.removeEventListener('mousedown', handleMouseDown);
+      renderer.domElement.removeEventListener('mousemove', handleMouseMove);
+      renderer.domElement.removeEventListener('mouseup', handleMouseUp);
+      renderer.domElement.removeEventListener('wheel', handleWheel);
+      renderer.domElement.removeEventListener('touchstart', handleTouchStart);
+      renderer.domElement.removeEventListener('touchmove', handleTouchMove);
+      renderer.domElement.removeEventListener('touchend', handleTouchEnd);
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
       }
@@ -408,7 +486,7 @@ export default function TitrationSimulator3D() {
             <div className="grid grid-cols-2 gap-4 text-yellow-200 text-sm">
               <ul className="space-y-1">
                 <li>• Drag on 3D view to rotate camera</li>
-                <li>• Scroll to zoom in/out</li>
+                <li>• Scroll/pinch to zoom in/out</li>
                 <li>• Start button begins titration</li>
                 <li>• Auto-rotate shows all angles</li>
               </ul>
@@ -639,6 +717,11 @@ export default function TitrationSimulator3D() {
           {/* Desktop Controls */}
           <div className="hidden lg:block absolute top-4 left-4 bg-black bg-opacity-70 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm shadow-lg">
             <p className="font-semibold">🖱️ Drag to rotate • 🖱️ Scroll to zoom</p>
+          </div>
+          
+          {/* Mobile Controls */}
+          <div className="lg:hidden absolute top-4 left-4 bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-xs shadow-lg">
+            <p className="font-semibold">👆 Drag to rotate • 🤏 Pinch to zoom</p>
           </div>
           <div className="hidden lg:block absolute top-4 right-4 flex flex-col gap-2">
             <button
