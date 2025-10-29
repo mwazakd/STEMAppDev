@@ -73,6 +73,9 @@ export default function TitrationSimulator3D() {
   const [autoRotate, setAutoRotate] = useState(true);
   const [buretteStopcockOpen, setBuretteStopcockOpen] = useState(false);
   const [buretteGripWidth, setBuretteGripWidth] = useState(25); // Default to burette diameter grip
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [showExpandButton, setShowExpandButton] = useState(false);
+  const collapseTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Ref to track liquid level without causing React re-renders
   const buretteLiquidLevelRef = useRef(100);
@@ -363,6 +366,65 @@ export default function TitrationSimulator3D() {
       userHasRotatedRef.current = false;
     }
   }, [autoRotate]);
+
+  // Handle guide state changes - ensure header stays open when guide is open
+  useEffect(() => {
+    if (showTutorial) {
+      // If guide is opened, ensure header is visible and stop any collapse timer
+      setHeaderCollapsed(false);
+      setShowExpandButton(false);
+      // Clear any existing timer
+      if (collapseTimerRef.current) {
+        clearTimeout(collapseTimerRef.current);
+        collapseTimerRef.current = null;
+      }
+    }
+  }, [showTutorial]);
+
+  // Handle header collapse timer
+  useEffect(() => {
+    // Clear any existing timer
+    if (collapseTimerRef.current) {
+      clearTimeout(collapseTimerRef.current);
+    }
+    
+    // Only start timer if guide is not open
+    if (!showTutorial) {
+      collapseTimerRef.current = setTimeout(() => {
+        setHeaderCollapsed(true);
+        setShowExpandButton(true);
+        collapseTimerRef.current = null;
+      }, 6000); // Collapse after 6 seconds (slower)
+    }
+
+    return () => {
+      if (collapseTimerRef.current) {
+        clearTimeout(collapseTimerRef.current);
+        collapseTimerRef.current = null;
+      }
+    };
+  }, [showTutorial]);
+
+  // Reset header when user interacts
+  const resetHeaderTimer = () => {
+    // Clear any existing timer
+    if (collapseTimerRef.current) {
+      clearTimeout(collapseTimerRef.current);
+      collapseTimerRef.current = null;
+    }
+    
+    setHeaderCollapsed(false);
+    setShowExpandButton(false);
+    
+    // Only start new timer if guide is not open
+    if (!showTutorial) {
+      collapseTimerRef.current = setTimeout(() => {
+        setHeaderCollapsed(true);
+        setShowExpandButton(true);
+        collapseTimerRef.current = null;
+      }, 6000); // Collapse after 6 seconds (slower)
+    }
+  };
   
   
   useEffect(() => {
@@ -463,14 +525,19 @@ export default function TitrationSimulator3D() {
           stopcockOpen={buretteStopcockOpen} // Pass stopcock state to control stream
         />
       )}
-      <div className="bg-black bg-opacity-40 backdrop-blur-md p-4 border-b border-cyan-500 border-opacity-30 shadow-lg">
+      <div className={`bg-black bg-opacity-40 backdrop-blur-md border-b border-cyan-500 border-opacity-30 shadow-lg transition-all duration-[2000ms] ease-in-out overflow-hidden ${
+        headerCollapsed ? 'h-0 p-0' : 'h-auto p-4'
+      }`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Beaker className="w-8 h-8 text-cyan-400" />
             <h1 className="text-3xl font-bold text-white">3D Titration Simulator</h1>
           </div>
           <button
-            onClick={() => setShowTutorial(!showTutorial)}
+            onClick={() => {
+              setShowTutorial(!showTutorial);
+              resetHeaderTimer();
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition shadow-lg"
           >
             <Info className="w-4 h-4" />
@@ -647,13 +714,19 @@ export default function TitrationSimulator3D() {
           <div className="lg:hidden absolute top-4 left-4 right-4 flex justify-between items-start z-10">
             <div className="flex gap-2">
               <button
-                onClick={() => setShowConfig(!showConfig)}
+                onClick={() => {
+                  setShowConfig(!showConfig);
+                  resetHeaderTimer();
+                }}
                 className="bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm shadow-lg"
               >
                 ⚙️ Config
               </button>
               <button
-                onClick={() => setShowChart(!showChart)}
+                onClick={() => {
+                  setShowChart(!showChart);
+                  resetHeaderTimer();
+                }}
                 className="bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm shadow-lg"
               >
                 📊 Chart
@@ -661,7 +734,10 @@ export default function TitrationSimulator3D() {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => setAutoRotate(!autoRotate)}
+                onClick={() => {
+                  setAutoRotate(!autoRotate);
+                  resetHeaderTimer();
+                }}
                 className={`px-3 py-2 rounded-lg text-sm font-semibold transition shadow-lg ${
                   autoRotate
                     ? 'bg-cyan-500 text-white'
@@ -672,9 +748,27 @@ export default function TitrationSimulator3D() {
               </button>
             </div>
           </div>
+
+          {/* Mobile Expand Header Button */}
+          {showExpandButton && (
+            <div className="lg:hidden absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+              <button
+                onClick={() => {
+                  setHeaderCollapsed(false);
+                  setShowExpandButton(false);
+                  resetHeaderTimer();
+                }}
+                className="bg-black bg-opacity-80 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm shadow-lg flex items-center gap-2"
+              >
+                <Beaker className="w-4 h-4 text-cyan-400" />
+                <span>3D Titration Simulator</span>
+                <Info className="w-4 h-4" />
+              </button>
+            </div>
+          )}
           
-          {/* Mobile Status Indicator - Left Side Vertical */}
-          <div className="lg:hidden absolute top-16 left-4 bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-4 rounded-lg shadow-lg">
+          {/* Mobile Status Indicator - Right Side Vertical */}
+          <div className="lg:hidden absolute top-16 right-4 bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-4 rounded-lg shadow-lg">
             <div className="space-y-3">
               <div className="text-center">
                 <p className="text-xs text-cyan-300">pH</p>
@@ -692,24 +786,30 @@ export default function TitrationSimulator3D() {
           </div>
           
           {/* Mobile Floating Start Button */}
-          <div className="lg:hidden absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-            <div className="flex gap-2">
+          <div className="lg:hidden absolute bottom-2 left-2 right-2 z-10">
+            <div className="flex gap-2 justify-center">
               <button
-                onClick={toggleDispensing}
-                className={`flex items-center justify-center gap-2 px-6 py-4 rounded-full font-semibold transition shadow-xl ${
+                onClick={() => {
+                  toggleDispensing();
+                  resetHeaderTimer();
+                }}
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-full font-semibold transition shadow-xl ${
                   isRunning
                     ? 'bg-red-500 hover:bg-red-600 text-white'
                     : 'bg-green-500 hover:bg-green-600 text-white'
                 }`}
               >
-                {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-                <span className="text-lg">{isRunning ? 'Pause' : 'Start'}</span>
+                {isRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                <span className="text-sm">{isRunning ? 'Pause' : 'Start'}</span>
               </button>
               <button
-                onClick={reset}
-                className="px-4 py-4 bg-gray-600 hover:bg-gray-700 text-white rounded-full font-semibold transition shadow-xl"
+                onClick={() => {
+                  reset();
+                  resetHeaderTimer();
+                }}
+                className="px-3 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-full font-semibold transition shadow-xl"
               >
-                <RotateCcw className="w-6 h-6" />
+                <RotateCcw className="w-5 h-5" />
               </button>
             </div>
           </div>
