@@ -263,12 +263,12 @@ export default function TitrationSimulator3D() {
         
         lastMouseRef.current = { x: e.clientX, y: e.clientY };
       } else if (mouseDownRef.current && cameraRef.current && !isMiddleMouseRef.current) {
-        // Orbit mode - rotate around look-at point (REVERSED)
+        // Orbit mode - rotate around look-at point (REVERSED AGAIN)
         const deltaX = e.clientX - lastMouseRef.current.x;
         const deltaY = e.clientY - lastMouseRef.current.y;
         
-        cameraAngleRef.current.theta -= deltaX * 0.005; // REVERSED
-        cameraAngleRef.current.phi += deltaY * 0.005; // REVERSED
+        cameraAngleRef.current.theta += deltaX * 0.005; // REVERSED AGAIN
+        cameraAngleRef.current.phi -= deltaY * 0.005; // REVERSED AGAIN
         cameraAngleRef.current.phi = Math.max(0.1, Math.min(Math.PI / 2, cameraAngleRef.current.phi));
         
         // Mark that user has manually rotated
@@ -339,13 +339,13 @@ export default function TitrationSimulator3D() {
       e.preventDefault();
       
       if (e.touches.length === 1 && touchDownRef.current && cameraRef.current) {
-        // Single touch - rotation (REVERSED)
+        // Single touch - rotation (REVERSED AGAIN)
         const touch = e.touches[0];
         const deltaX = touch.clientX - lastTouchRef.current.x;
         const deltaY = touch.clientY - lastTouchRef.current.y;
         
-        cameraAngleRef.current.theta -= deltaX * 0.005; // REVERSED
-        cameraAngleRef.current.phi += deltaY * 0.005; // REVERSED
+        cameraAngleRef.current.theta += deltaX * 0.005; // REVERSED AGAIN
+        cameraAngleRef.current.phi -= deltaY * 0.005; // REVERSED AGAIN
         cameraAngleRef.current.phi = Math.max(0.1, Math.min(Math.PI / 2, cameraAngleRef.current.phi));
         
         // Mark that user has manually rotated
