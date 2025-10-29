@@ -73,8 +73,6 @@ export default function TitrationSimulator3D() {
   const [autoRotate, setAutoRotate] = useState(true);
   const [buretteStopcockOpen, setBuretteStopcockOpen] = useState(false);
   const [buretteGripWidth, setBuretteGripWidth] = useState(25); // Default to burette diameter grip
-  const [headerCollapsed, setHeaderCollapsed] = useState(false);
-  const [showExpandButton, setShowExpandButton] = useState(false);
   const collapseTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Ref to track liquid level without causing React re-renders
@@ -366,63 +364,17 @@ export default function TitrationSimulator3D() {
       userHasRotatedRef.current = false;
     }
   }, [autoRotate]);
-
-  // Handle guide state changes - ensure header stays open when guide is open
-  useEffect(() => {
-    if (showTutorial) {
-      // If guide is opened, ensure header is visible and stop any collapse timer
-      setHeaderCollapsed(false);
-      setShowExpandButton(false);
-      // Clear any existing timer
-      if (collapseTimerRef.current) {
-        clearTimeout(collapseTimerRef.current);
-        collapseTimerRef.current = null;
-      }
-    }
-  }, [showTutorial]);
-
-  // Handle header collapse timer
-  useEffect(() => {
-    // Clear any existing timer
-    if (collapseTimerRef.current) {
-      clearTimeout(collapseTimerRef.current);
-    }
-    
-    // Only start timer if guide is not open
-    if (!showTutorial) {
-      collapseTimerRef.current = setTimeout(() => {
-        setHeaderCollapsed(true);
-        setShowExpandButton(true);
-        collapseTimerRef.current = null;
-      }, 6000); // Collapse after 6 seconds (slower)
-    }
-
-    return () => {
-      if (collapseTimerRef.current) {
-        clearTimeout(collapseTimerRef.current);
-        collapseTimerRef.current = null;
-      }
-    };
-  }, [showTutorial]);
-
-  // Reset header when user interacts
+  
+  // Mobile-only timer functionality (simplified since header is hidden on mobile)
   const resetHeaderTimer = () => {
+    // Only run on mobile devices
+    const isMobile = window.innerWidth < 1024; // lg breakpoint
+    if (!isMobile) return;
+    
     // Clear any existing timer
     if (collapseTimerRef.current) {
       clearTimeout(collapseTimerRef.current);
       collapseTimerRef.current = null;
-    }
-    
-    setHeaderCollapsed(false);
-    setShowExpandButton(false);
-    
-    // Only start new timer if guide is not open
-    if (!showTutorial) {
-      collapseTimerRef.current = setTimeout(() => {
-        setHeaderCollapsed(true);
-        setShowExpandButton(true);
-        collapseTimerRef.current = null;
-      }, 6000); // Collapse after 6 seconds (slower)
     }
   };
   
@@ -525,19 +477,14 @@ export default function TitrationSimulator3D() {
           stopcockOpen={buretteStopcockOpen} // Pass stopcock state to control stream
         />
       )}
-      <div className={`bg-black bg-opacity-40 backdrop-blur-md border-b border-cyan-500 border-opacity-30 shadow-lg transition-all duration-[2000ms] ease-in-out overflow-hidden ${
-        headerCollapsed ? 'h-0 p-0' : 'h-auto p-4'
-      }`}>
+      <div className="hidden lg:block bg-black bg-opacity-40 backdrop-blur-md border-b border-cyan-500 border-opacity-30 shadow-lg p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Beaker className="w-8 h-8 text-cyan-400" />
             <h1 className="text-3xl font-bold text-white">3D Titration Simulator</h1>
           </div>
           <button
-            onClick={() => {
-              setShowTutorial(!showTutorial);
-              resetHeaderTimer();
-            }}
+            onClick={() => setShowTutorial(!showTutorial)}
             className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition shadow-lg"
           >
             <Info className="w-4 h-4" />
@@ -547,7 +494,7 @@ export default function TitrationSimulator3D() {
       </div>
       
       {showTutorial && (
-        <div className="bg-yellow-900 bg-opacity-95 backdrop-blur-sm border-b border-yellow-600 p-4 shadow-lg">
+        <div className="hidden lg:block bg-yellow-900 bg-opacity-95 backdrop-blur-sm border-b border-yellow-600 p-4 shadow-lg">
           <div className="max-w-7xl mx-auto">
             <h3 className="font-bold text-yellow-100 mb-2 text-lg">Quick Guide:</h3>
             <div className="grid grid-cols-2 gap-4 text-yellow-200 text-sm">
@@ -710,9 +657,18 @@ export default function TitrationSimulator3D() {
         <div className="flex-1 relative">
           <div ref={mountRef} className="w-full h-full" />
           
-          {/* Mobile Controls Overlay */}
-          <div className="lg:hidden absolute top-4 left-4 right-4 flex justify-between items-start z-10">
-            <div className="flex gap-2">
+          {/* Mobile App Name - Above Stack */}
+          <div className="lg:hidden absolute top-4 left-4 z-10">
+            <div className="bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm shadow-lg flex items-center gap-2">
+              <Beaker className="w-4 h-4 text-cyan-400" />
+              <span className="font-semibold text-xs">3D Titration Simulator</span>
+            </div>
+          </div>
+
+          {/* Mobile Controls Overlay - Single Stack */}
+          <div className="lg:hidden absolute top-16 left-4 right-4 flex justify-between items-start z-10">
+            <div className="flex flex-col gap-2">
+              {/* Config Button */}
               <button
                 onClick={() => {
                   setShowConfig(!showConfig);
@@ -722,6 +678,26 @@ export default function TitrationSimulator3D() {
               >
                 ⚙️ Config
               </button>
+              
+              {/* Status Bar */}
+              <div className="bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-3 rounded-lg shadow-lg">
+                <div className="space-y-2">
+                  <div className="text-center">
+                    <p className="text-xs text-cyan-300">pH</p>
+                    <p className="text-sm font-bold text-cyan-100">{currentPH.toFixed(2)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-purple-300">Volume</p>
+                    <p className="text-sm font-bold text-purple-100">{titrantAdded.toFixed(1)} mL</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-green-300">Status</p>
+                    <p className="text-xs font-bold text-green-100">{isRunning ? 'Running' : 'Stopped'}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Chart Button */}
               <button
                 onClick={() => {
                   setShowChart(!showChart);
@@ -732,6 +708,8 @@ export default function TitrationSimulator3D() {
                 📊 Chart
               </button>
             </div>
+            
+            {/* Auto-rotate Button - Right Side */}
             <div className="flex gap-2">
               <button
                 onClick={() => {
@@ -748,42 +726,67 @@ export default function TitrationSimulator3D() {
               </button>
             </div>
           </div>
+          
+          {/* Mobile Guide Button */}
+          <div className="lg:hidden absolute top-4 right-4 z-20">
+            <button
+              onClick={() => {
+                setShowTutorial(!showTutorial);
+                resetHeaderTimer();
+              }}
+              className="bg-black bg-opacity-80 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm shadow-lg flex items-center gap-2"
+            >
+              <Info className="w-4 h-4" />
+              <span>{showTutorial ? 'Hide' : 'Show'} Guide</span>
+            </button>
+          </div>
 
-          {/* Mobile Expand Header Button */}
-          {showExpandButton && (
-            <div className="lg:hidden absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
-              <button
-                onClick={() => {
-                  setHeaderCollapsed(false);
-                  setShowExpandButton(false);
-                  resetHeaderTimer();
-                }}
-                className="bg-black bg-opacity-80 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm shadow-lg flex items-center gap-2"
-              >
-                <Beaker className="w-4 h-4 text-cyan-400" />
-                <span>3D Titration Simulator</span>
-                <Info className="w-4 h-4" />
-              </button>
+          {/* Mobile Tutorial Overlay */}
+          {showTutorial && (
+            <div className="lg:hidden fixed inset-0 z-50 bg-black bg-opacity-75 backdrop-blur-sm">
+              <div className="h-full bg-black bg-opacity-90 backdrop-blur-md p-6 overflow-y-auto">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-cyan-300">Quick Guide</h2>
+                  <button
+                    onClick={() => setShowTutorial(false)}
+                    className="text-white text-2xl hover:text-cyan-400"
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <div className="space-y-4 text-yellow-200 text-sm">
+                  <div>
+                    <h3 className="font-bold text-yellow-100 mb-2">3D Controls:</h3>
+                    <ul className="space-y-1">
+                      <li>• Drag on 3D view to rotate camera</li>
+                      <li>• Pinch to zoom in/out</li>
+                      <li>• Auto-rotate shows all angles</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-bold text-yellow-100 mb-2">Titration:</h3>
+                    <ul className="space-y-1">
+                      <li>• Start button begins titration</li>
+                      <li>• Watch stopcock rotate when dispensing</li>
+                      <li>• Monitor color change as pH shifts</li>
+                      <li>• Equipment vibrates realistically</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-bold text-yellow-100 mb-2">Controls:</h3>
+                    <ul className="space-y-1">
+                      <li>• Config: Adjust solution settings</li>
+                      <li>• Chart: View titration curve</li>
+                      <li>• Status: Monitor pH and volume</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
-          
-          {/* Mobile Status Indicator - Right Side Vertical */}
-          <div className="lg:hidden absolute top-16 right-4 bg-black bg-opacity-70 backdrop-blur-sm text-white px-3 py-4 rounded-lg shadow-lg">
-            <div className="space-y-3">
-              <div className="text-center">
-                <p className="text-xs text-cyan-300">pH</p>
-                <p className="text-lg font-bold text-cyan-100">{currentPH.toFixed(2)}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-purple-300">Volume</p>
-                <p className="text-lg font-bold text-purple-100">{titrantAdded.toFixed(1)} mL</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-green-300">Status</p>
-                <p className="text-sm font-bold text-green-100">{isRunning ? 'Running' : 'Stopped'}</p>
-              </div>
-            </div>
-          </div>
           
           {/* Mobile Floating Start Button */}
           <div className="lg:hidden absolute bottom-2 left-2 right-2 z-10">
