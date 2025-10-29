@@ -227,7 +227,7 @@ export default function TitrationSimulator3D() {
         const deltaX = e.clientX - lastMouseRef.current.x;
         const deltaY = e.clientY - lastMouseRef.current.y;
         
-        cameraAngleRef.current.theta -= deltaX * 0.005;
+        cameraAngleRef.current.theta += deltaX * 0.005;
         cameraAngleRef.current.phi -= deltaY * 0.005;
         cameraAngleRef.current.phi = Math.max(0.1, Math.min(Math.PI / 2, cameraAngleRef.current.phi));
         
@@ -282,7 +282,7 @@ export default function TitrationSimulator3D() {
         const deltaX = touch.clientX - lastTouchRef.current.x;
         const deltaY = touch.clientY - lastTouchRef.current.y;
         
-        cameraAngleRef.current.theta -= deltaX * 0.005;
+        cameraAngleRef.current.theta += deltaX * 0.005;
         cameraAngleRef.current.phi -= deltaY * 0.005;
         cameraAngleRef.current.phi = Math.max(0.1, Math.min(Math.PI / 2, cameraAngleRef.current.phi));
         
